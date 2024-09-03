@@ -5,7 +5,8 @@ import morgan from 'morgan';
 
 // Import Routes 
 import { 
-  authRoutes 
+  authRoutes, 
+  usersRoutes
 } from './routes/index.js';
 import { BASE_API_URL } from './config/env.js';
 
@@ -18,6 +19,7 @@ app.use(cookieParser());
 app.use(cors());
 
 // Routes
-app.use(`${BASE_API_URL}/auth`, authRoutes)
+app.use(`${BASE_API_URL}/auth`, authRoutes);
+app.use(`${BASE_API_URL}/users`, usersRoutes);
 
 export default app;
