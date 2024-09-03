@@ -55,6 +55,9 @@ const updateSchema = Joi.object({
     .trim()
     .min(3)
     .required(),
+  bio: Joi.string()
+    .trim()
+    .min(3),
   email: Joi.string()
     .trim()
     .email()
