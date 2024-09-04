@@ -95,11 +95,23 @@ const followUser = async (req, res) => {
       });
     }
 
-    user.following.push(userToFollow._id);
-    await user.save();
+    await User.findByIdAndUpdate(
+      user._id,
+      {
+        $push: {
+          following: userToFollow._id
+        }
+      }
+    );
 
-    userToFollow.followers.push(user._id);
-    await userToFollow.save();
+    await User.findByIdAndUpdate(
+      userToFollow._id,
+      {
+        $push: {
+          followers: user._id
+        }
+      }
+    );
     
     return res.json({
       success: true
@@ -148,11 +160,23 @@ const unfollowUser = async (req, res) => {
       });
     }
 
-    user.following = user.following.filter((userId) => userId.toString() !== userToUnfollow._id.toString());
-    await user.save();
+    await User.findByIdAndUpdate(
+      user._id,
+      {
+        $pull: {
+          following: userToUnfollow._id
+        }
+      }
+    );
 
-    userToUnfollow.followers = userToUnfollow.followers.filter((userId) => userId.toString() !== user._id.toString());
-    await userToUnfollow.save();
+    await User.findByIdAndUpdate(
+      userToUnfollow._id,
+      {
+        $pull: {
+          followers: user._id
+        }
+      }
+    );
 
     return res.json({
       success: true
