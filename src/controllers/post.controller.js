@@ -12,6 +12,13 @@ const getPosts = async (req, res) => {
       .populate({
         path: 'author',
         select: 'firstName lastName username'
+      })
+      .populate({
+        path: 'originalPost',
+        populate: {
+          path: 'author',
+          select: 'firstName lastName username'
+        }
       });
 
     return res.json({
@@ -36,13 +43,21 @@ const getPostsByFollowing = async (req, res) => {
         error: 'User not found.'
       });
     }
-
+ 
     const posts = await Post.find({ author: { $in: user.following } })
       .sort({ createdAt: -1 })
       .populate({
         path: 'author',
         select: 'firstName lastName username'
+      })
+      .populate({
+        path: 'originalPost',
+        populate: {
+          path: 'author',
+          select: 'firstName lastName username'
+        }
       });
+
 
     return res.json({
       success: true,
@@ -263,6 +278,12 @@ const deletePost = async (req, res) => {
       } 
     );
 
+    // Delete Shared Posts
+    await Post.deleteMany({ originalPost: post._id });
+
+    // Update User Saved Post
+    await User.updateMany({ $pull: { savedPosts: post._id } });
+
     const imagesToRemove = post.images.map((image) => image.public_id);
     await deleteImages(imagesToRemove);
     await post.deleteOne();
@@ -465,6 +486,125 @@ const unsavePost = async (req, res) => {
   }
 }
 
+const sharePost = async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+
+  const isValidId = validateObjectId(id);
+
+  if (!isValidId) {  
+    return res.status(404).json({
+      success: false,
+      error: 'Invalid object id.'
+    });
+  }
+
+  try {
+    const originalPost = await Post.findById(id);
+
+    if (!originalPost) {
+      return res.status(404).json({
+        success: false,
+        error: 'Post not found'
+      });
+    }
+
+    if (userId.toString() === originalPost.author.toString()) {
+      return res.status(404).json({
+        success: false,
+        error: 'You cannot share your own publication'
+      });
+    }
+
+    const alreadyShared = originalPost.sharedBy.some((share) => share.user.toString() === userId.toString());
+
+    if (alreadyShared) {
+      return res.status(404).json({
+        success: false,
+        error: 'You have already shared this post'
+      });
+    }
+
+    const post = new Post();
+    post.author = userId;
+    post.originalPost = originalPost._id;
+
+    const result = await post.save();
+
+    // Update Original Post
+    await Post.findByIdAndUpdate(
+      originalPost._id,
+      {
+        $push: {
+          sharedBy: {
+            user: userId
+          }
+        }
+      }
+    );
+
+    return res.status(201).json({
+      success: true,
+      data: result
+    })
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+const unsharePost = async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+
+  const isValidId = validateObjectId(id);
+
+  if (!isValidId) {  
+    return res.status(404).json({
+      success: false,
+      error: 'Invalid object id.'
+    });
+  }
+
+  try {
+    const post = await Post.findById(id);
+
+    if (!post || !post.originalPost) {
+      return res.status(404).json({
+        success: false,
+        error: 'Post not found or is not shared post'
+      });
+    }
+
+    if (post.author.toString() !== userId.toString()) {
+      return res.status(404).json({
+        success: false,
+        error: 'Unauthorized'
+      });
+    }
+
+    // Delete Post
+    await post.deleteOne();
+
+    // Update Original Post
+    await Post.findByIdAndUpdate(
+      post.originalPost,
+      {
+        $pull: {
+          sharedBy: {
+            user: userId
+          }
+        }
+      }
+    );
+
+    return res.status(201).json({
+      success: true
+    })
+  } catch (error) {
+    console.log(error);
+  }
+}
+
 export {
   getPosts,
   getPostsByFollowing,
@@ -475,5 +615,7 @@ export {
   likePost,
   unlikePost,
   savePost,
-  unsavePost
+  unsavePost,
+  sharePost,
+  unsharePost
 }

@@ -9,7 +9,9 @@ import {
   unlikePost,
   savePost,
   unsavePost,
-  getPost
+  getPost,
+  sharePost,
+  unsharePost
 } from '../controllers/post.controller.js';
 import upload from '../config/multer.js';
 import { verifyToken } from '../middlewares/auth.js';
@@ -26,5 +28,7 @@ router.patch('/like/:id', verifyToken, likePost);
 router.patch('/unlike/:id', verifyToken, unlikePost);
 router.patch('/save/:id', verifyToken, savePost);
 router.patch('/unsave/:id', verifyToken, unsavePost);
+router.post('/share/:id', verifyToken, sharePost);
+router.post('/unshare/:id', verifyToken, unsharePost);
 
 export default router;
