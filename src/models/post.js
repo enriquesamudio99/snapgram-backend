@@ -51,6 +51,11 @@ const postSchema = mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Post',
     default: null
+  },
+  communityId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Community',
+    default: null
   }
 }, {
   timestamps: true

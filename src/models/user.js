@@ -58,6 +58,12 @@ const userSchema = mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Post'
     }
+  ],
+  communities: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Community'
+    }
   ]
 }, {
   timestamps: true

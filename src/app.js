@@ -7,7 +7,8 @@ import morgan from 'morgan';
 import { 
   authRoutes, 
   usersRoutes,
-  postsRoutes
+  postsRoutes,
+  communitiesRoutes
 } from './routes/index.js';
 import { BASE_API_URL } from './config/env.js';
 
@@ -23,5 +24,6 @@ app.use(cors());
 app.use(`${BASE_API_URL}/auth`, authRoutes);
 app.use(`${BASE_API_URL}/users`, usersRoutes);
 app.use(`${BASE_API_URL}/posts`, postsRoutes);
+app.use(`${BASE_API_URL}/communities`, communitiesRoutes);
 
 export default app;

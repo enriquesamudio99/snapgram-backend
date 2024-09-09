@@ -1,9 +1,8 @@
 import User from '../models/user.js';
 import Post from '../models/post.js';
-import uploadImages from "../helpers/uploadImages.js";
 import { postSchema } from "../validations/post.validation.js";
 import { validateObjectId } from '../helpers/utilities.js';
-import deleteImages from '../helpers/deleteImages.js';
+import { uploadImages, deleteImages } from '../helpers/images.js';
 
 const getPosts = async (req, res) => {
   try {
@@ -281,14 +280,14 @@ const deletePost = async (req, res) => {
     // Delete Shared Posts
     await Post.deleteMany({ originalPost: post._id });
 
-    // Update User Saved Post
+    // Update Users Saved Posts
     await User.updateMany({ $pull: { savedPosts: post._id } });
 
     const imagesToRemove = post.images.map((image) => image.public_id);
     await deleteImages(imagesToRemove);
     await post.deleteOne();
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Post deleted successfully.'
     });
