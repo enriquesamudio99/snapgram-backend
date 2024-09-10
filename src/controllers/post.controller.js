@@ -1,5 +1,6 @@
 import User from '../models/user.js';
 import Post from '../models/post.js';
+import Community from '../models/community.js';
 import { postSchema } from "../validations/post.validation.js";
 import { validateObjectId } from '../helpers/utilities.js';
 import { uploadImages, deleteImages } from '../helpers/images.js';
@@ -105,6 +106,7 @@ const getPost = async (req, res) => {
 
 const createPost = async (req, res) => {
 
+  const { communityId } = req.params;
   const userId = req.user._id;
 
   if(req.files.length === 0) {
@@ -132,6 +134,7 @@ const createPost = async (req, res) => {
     const post = new Post(value);
     post.author = userId;
     post.images = images;
+    post.community = communityId ? communityId : null;
 
     const result = await post.save();
 
@@ -144,6 +147,18 @@ const createPost = async (req, res) => {
         },
       } 
     );
+
+    // Update Community
+    if (communityId) {
+      await Community.findByIdAndUpdate(
+        communityId, 
+        {
+          $push: { 
+            posts: result._id 
+          },
+        } 
+      );
+    }
 
     return res.json({
       success: true,
@@ -282,6 +297,18 @@ const deletePost = async (req, res) => {
 
     // Update Users Saved Posts
     await User.updateMany({ $pull: { savedPosts: post._id } });
+
+    // Update Community Posts
+    if (post.community) {
+      await Community.findByIdAndUpdate(
+        post.community, 
+        {
+          $pull: { 
+            posts: post._id 
+          },
+        } 
+      );
+    }
 
     const imagesToRemove = post.images.map((image) => image.public_id);
     await deleteImages(imagesToRemove);

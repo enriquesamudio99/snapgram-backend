@@ -52,7 +52,7 @@ const postSchema = mongoose.Schema({
     ref: 'Post',
     default: null
   },
-  communityId: {
+  community: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Community',
     default: null

@@ -22,6 +22,7 @@ router.get('/', getPosts);
 router.get('/following', verifyToken, getPostsByFollowing);
 router.get('/:id', getPost);
 router.post('/', verifyToken, upload.array('images', 10), createPost);
+router.post('/community/:communityId', verifyToken, upload.array('images', 10), createPost);
 router.patch('/:id', verifyToken, upload.array('images', 10), updatePost);
 router.delete('/:id', verifyToken, deletePost);
 router.patch('/like/:id', verifyToken, likePost);
