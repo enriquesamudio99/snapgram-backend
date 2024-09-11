@@ -2,17 +2,58 @@ import User from "../models/user.js";
 import { validateObjectId } from "../helpers/utilities.js";
 
 const getUsers = async (req, res) => {
-  try {
-    const users = await User.find().select({
-      password: 0,
-      refreshToken: 0,
-      resetPasswordExpires: 0,
-      resetPasswordToken: 0
-    });
+  const { searchQuery, sort } = req.query;
 
+  // Pagination
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skipAmount = (page - 1) * limit;
+
+  try {
+    const query = {};   
+    
+    if(searchQuery) {
+      const escapedSearchQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { firstName: { $regex: new RegExp(escapedSearchQuery, 'i') }},
+        { lastName: { $regex: new RegExp(escapedSearchQuery, 'i') }},
+        { username: { $regex: new RegExp(escapedSearchQuery, 'i') }},
+      ]
+    }
+
+    let sortOptions = {}; 
+
+    switch (sort) {
+      case "new_users":
+        sortOptions = { createdAt: -1 }
+        break;
+      case "old_users":
+        sortOptions = { createdAt: 1 }
+        break;
+      default:
+        sortOptions = { createdAt: -1 }
+        break;
+    }
+
+    const users = await User.find(query)
+      .select({
+        password: 0,
+        refreshToken: 0,
+        resetPasswordExpires: 0,
+        resetPasswordToken: 0
+      })  
+      .sort(sortOptions)
+      .skip(skipAmount)
+      .limit(limit);
+
+    const totalUsers = await User.countDocuments(query);
+    const isNext = totalUsers > skipAmount + users.length; 
+    
     return res.json({
       success: true,
-      data: users
+      data: users,
+      totalUsers,
+      isNext
     })
   } catch (error) {
     console.log(error);

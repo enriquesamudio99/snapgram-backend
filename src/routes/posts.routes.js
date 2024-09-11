@@ -3,6 +3,7 @@ import {
   createPost,
   getPosts,
   getPostsByFollowing,
+  getPostsByCommunity,
   updatePost,
   deletePost,
   likePost,
@@ -20,6 +21,7 @@ const router = Router();
 
 router.get('/', getPosts);
 router.get('/following', verifyToken, getPostsByFollowing);
+router.get('/community/:communityId', verifyToken, getPostsByCommunity);
 router.get('/:postId', getPost);
 router.post('/', verifyToken, upload.array('images', 10), createPost);
 router.post('/community/:communityId', verifyToken, upload.array('images', 10), createPost);

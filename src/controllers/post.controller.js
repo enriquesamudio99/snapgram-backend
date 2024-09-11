@@ -8,9 +8,42 @@ import { uploadImages, deleteImages } from '../helpers/images.js';
 import { deleteReplies } from './comment.controller.js';
 
 const getPosts = async (req, res) => {
+  const { searchQuery, sort } = req.query;
+
+  // Pagination
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skipAmount = (page - 1) * limit;
+
   try {
-    const posts = await Post.find()
-      .sort({ createdAt: -1 })
+    const query = {};   
+    query.community = [null, undefined];
+    
+    if(searchQuery) {
+      const escapedSearchQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { caption: { $regex: new RegExp(escapedSearchQuery, 'i') }}
+      ]
+    }
+
+    let sortOptions = {}; 
+
+    switch (sort) {
+      case "new_posts":
+        sortOptions = { createdAt: -1 }
+        break;
+      case "old_posts":
+        sortOptions = { createdAt: 1 }
+        break;
+      default:
+        sortOptions = { createdAt: -1 }
+        break;
+    }
+
+    const posts = await Post.find(query)
+      .sort(sortOptions)
+      .skip(skipAmount)
+      .limit(limit)
       .populate({
         path: 'author',
         select: 'firstName lastName username'
@@ -22,10 +55,15 @@ const getPosts = async (req, res) => {
           select: 'firstName lastName username'
         }
       });
+    
+    const totalPosts = await Post.countDocuments(query);
+    const isNext = totalPosts > skipAmount + posts.length; 
 
     return res.json({
       success: true,
-      data: posts
+      data: posts,
+      totalPosts,
+      isNext
     });
   } catch (error) {
     console.log(error);
@@ -35,6 +73,12 @@ const getPosts = async (req, res) => {
 const getPostsByFollowing = async (req, res) => {
 
   const userId = req.user._id;
+  const { searchQuery, sort } = req.query;
+
+  // Pagination
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skipAmount = (page - 1) * limit;
 
   try {
     const user = await User.findById(userId);
@@ -45,9 +89,36 @@ const getPostsByFollowing = async (req, res) => {
         error: 'User not found.'
       });
     }
+
+    const query = {};   
+    query.community = [null, undefined];
+    query.author = { $in: user.following }
+    
+    if(searchQuery) {
+      const escapedSearchQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { caption: { $regex: new RegExp(escapedSearchQuery, 'i') }}
+      ]
+    }
+
+    let sortOptions = {}; 
+
+    switch (sort) {
+      case "new_posts":
+        sortOptions = { createdAt: -1 }
+        break;
+      case "old_posts":
+        sortOptions = { createdAt: 1 }
+        break;
+      default:
+        sortOptions = { createdAt: -1 }
+        break;
+    }
  
-    const posts = await Post.find({ author: { $in: user.following } })
-      .sort({ createdAt: -1 })
+    const posts = await Post.find(query)
+      .sort(sortOptions)
+      .skip(skipAmount)
+      .limit(limit)
       .populate({
         path: 'author',
         select: 'firstName lastName username'
@@ -59,11 +130,90 @@ const getPostsByFollowing = async (req, res) => {
           select: 'firstName lastName username'
         }
       });
-
+    
+    const totalPosts = await Post.countDocuments(query);
+    const isNext = totalPosts > skipAmount + posts.length; 
 
     return res.json({
       success: true,
-      data: posts
+      data: posts,
+      totalPosts,
+      isNext
+    });
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+
+const getPostsByCommunity = async (req, res) => {
+  const { communityId } = req.params;
+
+  const isValidId = validateObjectId(communityId);
+  
+  if (!isValidId) {  
+    return res.status(404).json({
+      success: false,
+      error: 'Invalid object id.'
+    });
+  }
+
+  const { searchQuery, sort } = req.query;
+
+  // Pagination
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skipAmount = (page - 1) * limit;
+
+  try {
+    const query = {};   
+    query.community = communityId;
+    
+    if(searchQuery) {
+      const escapedSearchQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { caption: { $regex: new RegExp(escapedSearchQuery, 'i') }}
+      ]
+    }
+
+    let sortOptions = {}; 
+
+    switch (sort) {
+      case "new_posts":
+        sortOptions = { createdAt: -1 }
+        break;
+      case "old_posts":
+        sortOptions = { createdAt: 1 }
+        break;
+      default:
+        sortOptions = { createdAt: -1 }
+        break;
+    }
+
+    const posts = await Post.find(query)
+      .sort(sortOptions)
+      .skip(skipAmount)
+      .limit(limit)
+      .populate({
+        path: 'author',
+        select: 'firstName lastName username'
+      })
+      .populate({
+        path: 'originalPost',
+        populate: {
+          path: 'author',
+          select: 'firstName lastName username'
+        }
+      });
+    
+    const totalPosts = await Post.countDocuments(query);
+    const isNext = totalPosts > skipAmount + posts.length; 
+
+    return res.json({
+      success: true,
+      data: posts,
+      totalPosts,
+      isNext
     });
   } catch (error) {
     console.log(error);
@@ -657,6 +807,7 @@ const deletePostsAndImages = async (posts) => {
 export {
   getPosts,
   getPostsByFollowing,
+  getPostsByCommunity,
   getPost,
   createPost,
   updatePost,
