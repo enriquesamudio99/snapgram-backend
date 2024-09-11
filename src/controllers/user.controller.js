@@ -21,9 +21,9 @@ const getUsers = async (req, res) => {
 
 const getUser = async (req, res) => {
 
-  const { id } = req.params;
+  const { userId } = req.params;
 
-  const isValidId = validateObjectId(id);
+  const isValidId = validateObjectId(userId);
 
   if (!isValidId) {  
     return res.status(404).json({
@@ -33,7 +33,7 @@ const getUser = async (req, res) => {
   }
 
   try {
-    const user = await User.findById(id).select({
+    const user = await User.findById(userId).select({
       password: 0,
       refreshToken: 0,
       resetPasswordExpires: 0,
@@ -58,10 +58,10 @@ const getUser = async (req, res) => {
 
 const followUser = async (req, res) => {
 
-  const { id } = req.params;
+  const { followUserId } = req.params;
   const userId = req.user._id;
 
-  const isValidId = validateObjectId(id);
+  const isValidId = validateObjectId(followUserId);
 
   if (!isValidId) {  
     return res.status(404).json({
@@ -70,7 +70,7 @@ const followUser = async (req, res) => {
     });
   }
 
-  if (id === userId) {  
+  if (followUserId === userId) {  
     return res.status(404).json({
       success: false,
       error: 'Something wrong.'
@@ -78,7 +78,7 @@ const followUser = async (req, res) => {
   }
   
   try {
-    const userToFollow = await User.findById(id);
+    const userToFollow = await User.findById(followUserId);
     const user = await User.findById(userId);
 
     if (!userToFollow || !user) {  
@@ -123,10 +123,10 @@ const followUser = async (req, res) => {
 
 const unfollowUser = async (req, res) => {
 
-  const { id } = req.params;
+  const { unfollowUserId } = req.params;
   const userId = req.user._id;
 
-  const isValidId = validateObjectId(id);
+  const isValidId = validateObjectId(unfollowUserId);
 
   if (!isValidId) {  
     return res.status(404).json({
@@ -135,7 +135,7 @@ const unfollowUser = async (req, res) => {
     });
   }
 
-  if (id === userId) {  
+  if (unfollowUserId === userId) {  
     return res.status(404).json({
       success: false,
       error: 'Something wrong.'
@@ -143,7 +143,7 @@ const unfollowUser = async (req, res) => {
   }
 
   try {
-    const userToUnfollow = await User.findById(id);
+    const userToUnfollow = await User.findById(unfollowUserId);
     const user = await User.findById(userId);
 
     if (!userToUnfollow || !user) {  

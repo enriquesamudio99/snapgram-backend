@@ -20,16 +20,16 @@ const router = Router();
 
 router.get('/', getPosts);
 router.get('/following', verifyToken, getPostsByFollowing);
-router.get('/:id', getPost);
+router.get('/:postId', getPost);
 router.post('/', verifyToken, upload.array('images', 10), createPost);
 router.post('/community/:communityId', verifyToken, upload.array('images', 10), createPost);
-router.patch('/:id', verifyToken, upload.array('images', 10), updatePost);
-router.delete('/:id', verifyToken, deletePost);
-router.patch('/like/:id', verifyToken, likePost);
-router.patch('/unlike/:id', verifyToken, unlikePost);
-router.patch('/save/:id', verifyToken, savePost);
-router.patch('/unsave/:id', verifyToken, unsavePost);
-router.post('/share/:id', verifyToken, sharePost);
-router.post('/unshare/:id', verifyToken, unsharePost);
+router.patch('/:postId', verifyToken, upload.array('images', 10), updatePost);
+router.delete('/:postId', verifyToken, deletePost);
+router.patch('/like/:postId', verifyToken, likePost);
+router.patch('/unlike/:postId', verifyToken, unlikePost);
+router.patch('/save/:postId', verifyToken, savePost);
+router.patch('/unsave/:postId', verifyToken, unsavePost);
+router.post('/share/:postId', verifyToken, sharePost);
+router.post('/unshare/:postId', verifyToken, unsharePost);
 
 export default router;

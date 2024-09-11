@@ -247,9 +247,9 @@ const logoutUser = async (req, res) => {
 
 const updateUser = async (req, res) => {
 
-  const { id } = req.params;
+  const { userId } = req.params;
 
-  const isValidId = validateObjectId(id);
+  const isValidId = validateObjectId(userId);
   
   if (!isValidId) {  
     return res.status(404).json({
@@ -268,7 +268,7 @@ const updateUser = async (req, res) => {
   }
 
   try {
-    const user = await User.findById(id);
+    const user = await User.findById(userId);
 
     if (!user) {  
       return res.status(404).json({
@@ -303,7 +303,7 @@ const updateUser = async (req, res) => {
       }
     }
 
-    const updatedUser = await User.findByIdAndUpdate(id, value, { new: true });
+    const updatedUser = await User.findByIdAndUpdate(userId, value, { new: true });
 
     return res.json({
       success: true,
@@ -315,9 +315,9 @@ const updateUser = async (req, res) => {
 }
 
 const updateUserPassword = async (req, res) => {
-  const { id } = req.params;
+  const { userId } = req.params;
 
-  const isValidId = validateObjectId(id);
+  const isValidId = validateObjectId(userId);
   
   if (!isValidId) {  
     return res.status(404).json({
@@ -336,7 +336,7 @@ const updateUserPassword = async (req, res) => {
   }
 
   try {
-    const user = await User.findById(id);
+    const user = await User.findById(userId);
 
     if (!user) {  
       return res.status(404).json({
@@ -370,9 +370,9 @@ const updateUserPassword = async (req, res) => {
 }
 
 const deleteUser = async (req, res) => {
-  const { id } = req.params;
+  const { userId } = req.params;
 
-  const isValidId = validateObjectId(id);
+  const isValidId = validateObjectId(userId);
   
   if (!isValidId) {  
     return res.status(404).json({
@@ -383,7 +383,7 @@ const deleteUser = async (req, res) => {
  
   try {
     
-    const user = await User.findByIdAndDelete(id);
+    const user = await User.findByIdAndDelete(userId);
 
     if (!user) {  
       return res.status(404).json({

@@ -12,9 +12,9 @@ import { verifyToken } from '../middlewares/auth.js';
 const router = Router();
 
 router.get('/', getCommunities);
-router.get('/:id', getCommunity);
+router.get('/:communityId', getCommunity);
 router.post('/', verifyToken, upload.array('images', 1), createCommunity);
-router.patch('/:id', verifyToken, upload.array('images', 1), updateCommunity);
-router.delete('/:id', verifyToken, deleteCommunity);
+router.patch('/:communityId', verifyToken, upload.array('images', 1), updateCommunity);
+router.delete('/:communityId', verifyToken, deleteCommunity);
 
 export default router;

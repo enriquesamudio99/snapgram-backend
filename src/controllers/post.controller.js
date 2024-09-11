@@ -1,9 +1,11 @@
 import User from '../models/user.js';
 import Post from '../models/post.js';
 import Community from '../models/community.js';
+import Comment from '../models/comment.js';
 import { postSchema } from "../validations/post.validation.js";
 import { validateObjectId } from '../helpers/utilities.js';
 import { uploadImages, deleteImages } from '../helpers/images.js';
+import { deleteReplies } from './comment.controller.js';
 
 const getPosts = async (req, res) => {
   try {
@@ -70,9 +72,9 @@ const getPostsByFollowing = async (req, res) => {
 
 const getPost = async (req, res) => {
 
-  const { id } = req.params;
+  const { postId } = req.params;
 
-  const isValidId = validateObjectId(id);
+  const isValidId = validateObjectId(postId);
 
   if (!isValidId) {  
     return res.status(404).json({
@@ -82,7 +84,7 @@ const getPost = async (req, res) => {
   }
 
   try {
-    const post = await Post.findById(id)
+    const post = await Post.findById(postId)
       .populate({
         path: 'author',
         select: 'firstName lastName username'
@@ -171,10 +173,10 @@ const createPost = async (req, res) => {
 
 const updatePost = async (req, res) => {
 
-  const { id } = req.params;
+  const { postId } = req.params;
   const userId = req.user._id;
 
-  const isValidId = validateObjectId(id);
+  const isValidId = validateObjectId(postId);
 
   if (!isValidId) {  
     return res.status(404).json({
@@ -193,7 +195,7 @@ const updatePost = async (req, res) => {
   } 
 
   try {
-    const post = await Post.findById(id);
+    const post = await Post.findById(postId);
 
     if (!post) {  
       return res.status(404).json({
@@ -231,7 +233,7 @@ const updatePost = async (req, res) => {
     } 
 
     const updatedPost = await Post.findByIdAndUpdate(
-      id,
+      postId,
       {
         ...value,
         images: post.images
@@ -252,10 +254,10 @@ const updatePost = async (req, res) => {
 
 const deletePost = async (req, res) => {
 
-  const { id } = req.params;
+  const { postId } = req.params;
   const userId = req.user._id;
 
-  const isValidId = validateObjectId(id);
+  const isValidId = validateObjectId(postId);
 
   if (!isValidId) {  
     return res.status(404).json({
@@ -266,7 +268,10 @@ const deletePost = async (req, res) => {
 
   try {
 
-    const post = await Post.findById(id);
+    const post = await Post.findById(postId)
+      .populate({
+        path: "comments"
+      });
 
     if (!post) {  
       return res.status(404).json({
@@ -280,6 +285,12 @@ const deletePost = async (req, res) => {
         success: false,
         error: 'Unauthorized.'
       });
+    }
+
+    // Delete All Comments and their Replies
+    for (const comment of post.comments) {
+      await deleteReplies(comment.replies);
+      await Comment.findByIdAndDelete(comment._id);
     }
 
     // Update user
@@ -325,10 +336,10 @@ const deletePost = async (req, res) => {
 }
 
 const likePost = async (req, res) => {
-  const { id } = req.params;
+  const { postId } = req.params;
   const userId = req.user._id;
 
-  const isValidId = validateObjectId(id);
+  const isValidId = validateObjectId(postId);
 
   if (!isValidId) {  
     return res.status(404).json({
@@ -338,7 +349,7 @@ const likePost = async (req, res) => {
   }
 
   try { 
-    const post = await Post.findById(id);
+    const post = await Post.findById(postId);
 
     if (!post) {  
       return res.status(404).json({
@@ -365,17 +376,17 @@ const likePost = async (req, res) => {
 
     return res.json({
       success: true
-    })
+    });
   } catch (error) {
     console.log(error);
   }
 }
 
 const unlikePost = async (req, res) => {
-  const { id } = req.params;
+  const { postId } = req.params;
   const userId = req.user._id;
 
-  const isValidId = validateObjectId(id);
+  const isValidId = validateObjectId(postId);
 
   if (!isValidId) {  
     return res.status(404).json({
@@ -385,7 +396,7 @@ const unlikePost = async (req, res) => {
   }
 
   try { 
-    const post = await Post.findById(id);
+    const post = await Post.findById(postId);
 
     if (!post) {  
       return res.status(404).json({
@@ -412,17 +423,17 @@ const unlikePost = async (req, res) => {
 
     return res.json({
       success: true
-    })
+    });
   } catch (error) {
     console.log(error);
   }
 }
 
 const savePost = async (req, res) => {
-  const { id } = req.params;
+  const { postId } = req.params;
   const userId = req.user._id;
 
-  const isValidId = validateObjectId(id);
+  const isValidId = validateObjectId(postId);
 
   if (!isValidId) {  
     return res.status(404).json({
@@ -441,7 +452,7 @@ const savePost = async (req, res) => {
       });
     }
 
-    if (user.savedPosts.includes(id)) {
+    if (user.savedPosts.includes(postId)) {
       return res.status(404).json({
         success: false,
         error: 'You already save this post.'
@@ -452,7 +463,7 @@ const savePost = async (req, res) => {
       userId,
       {
         $push: {
-          savedPosts: id
+          savedPosts: postId
         }
       }
     );
@@ -466,10 +477,10 @@ const savePost = async (req, res) => {
 }
 
 const unsavePost = async (req, res) => {
-  const { id } = req.params;
+  const { postId } = req.params;
   const userId = req.user._id;
 
-  const isValidId = validateObjectId(id);
+  const isValidId = validateObjectId(postId);
 
   if (!isValidId) {  
     return res.status(404).json({
@@ -488,7 +499,7 @@ const unsavePost = async (req, res) => {
       });
     }
 
-    if (!user.savedPosts.includes(id)) {
+    if (!user.savedPosts.includes(postId)) {
       return res.status(404).json({
         success: false,
         error: 'You have not saved this post.'
@@ -499,7 +510,7 @@ const unsavePost = async (req, res) => {
       userId,
       {
         $pull: {
-          savedPosts: id
+          savedPosts: postId
         }
       }
     );
@@ -513,10 +524,10 @@ const unsavePost = async (req, res) => {
 }
 
 const sharePost = async (req, res) => {
-  const { id } = req.params;
+  const { postId } = req.params;
   const userId = req.user._id;
 
-  const isValidId = validateObjectId(id);
+  const isValidId = validateObjectId(postId);
 
   if (!isValidId) {  
     return res.status(404).json({
@@ -526,7 +537,7 @@ const sharePost = async (req, res) => {
   }
 
   try {
-    const originalPost = await Post.findById(id);
+    const originalPost = await Post.findById(postId);
 
     if (!originalPost) {
       return res.status(404).json({
@@ -572,17 +583,17 @@ const sharePost = async (req, res) => {
     return res.status(201).json({
       success: true,
       data: result
-    })
+    });
   } catch (error) {
     console.log(error);
   }
 }
 
 const unsharePost = async (req, res) => {
-  const { id } = req.params;
+  const { postId } = req.params;
   const userId = req.user._id;
 
-  const isValidId = validateObjectId(id);
+  const isValidId = validateObjectId(postId);
 
   if (!isValidId) {  
     return res.status(404).json({
@@ -592,7 +603,7 @@ const unsharePost = async (req, res) => {
   }
 
   try {
-    const post = await Post.findById(id);
+    const post = await Post.findById(postId);
 
     if (!post || !post.originalPost) {
       return res.status(404).json({
@@ -625,7 +636,7 @@ const unsharePost = async (req, res) => {
 
     return res.status(201).json({
       success: true
-    })
+    });
   } catch (error) {
     console.log(error);
   }

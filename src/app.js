@@ -8,7 +8,8 @@ import {
   authRoutes, 
   usersRoutes,
   postsRoutes,
-  communitiesRoutes
+  communitiesRoutes,
+  commentsRoutes
 } from './routes/index.js';
 import { BASE_API_URL } from './config/env.js';
 
@@ -25,5 +26,6 @@ app.use(`${BASE_API_URL}/auth`, authRoutes);
 app.use(`${BASE_API_URL}/users`, usersRoutes);
 app.use(`${BASE_API_URL}/posts`, postsRoutes);
 app.use(`${BASE_API_URL}/communities`, communitiesRoutes);
+app.use(`${BASE_API_URL}/comments`, commentsRoutes);
 
 export default app;

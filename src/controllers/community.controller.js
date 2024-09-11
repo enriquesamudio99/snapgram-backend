@@ -26,9 +26,9 @@ const getCommunities = async (req, res) => {
 }
 
 const getCommunity = async (req, res) => {
-  const { id } = req.params;
+  const { communityId } = req.params;
 
-  const isValidId = validateObjectId(id);
+  const isValidId = validateObjectId(communityId);
 
   if (!isValidId) {  
     return res.status(404).json({
@@ -38,7 +38,7 @@ const getCommunity = async (req, res) => {
   }
 
   try {
-    const community = await Community.findById(id);
+    const community = await Community.findById(communityId);
     
     if (!community) {  
       return res.status(404).json({
@@ -126,10 +126,10 @@ const createCommunity = async (req, res) => {
 
 const updateCommunity = async (req, res) => {
 
-  const { id } = req.params;
+  const { communityId } = req.params;
   const userId = req.user._id;
 
-  const isValidId = validateObjectId(id);
+  const isValidId = validateObjectId(communityId);
 
   if (!isValidId) {  
     return res.status(404).json({
@@ -148,7 +148,7 @@ const updateCommunity = async (req, res) => {
   }
 
   try {
-    const community = await Community.findById(id);
+    const community = await Community.findById(communityId);
 
     if (!community) {  
       return res.status(404).json({
@@ -198,7 +198,7 @@ const updateCommunity = async (req, res) => {
     
     // Update Community
     const updatedCommunity = await Community.findByIdAndUpdate(
-      id,
+      communityId,
       {
         ...value,
         image: image ? image : community.image
@@ -219,10 +219,10 @@ const updateCommunity = async (req, res) => {
 
 const deleteCommunity = async (req, res) => {
 
-  const { id } = req.params;
+  const { communityId } = req.params;
   const userId = req.user._id;
 
-  const isValidId = validateObjectId(id);
+  const isValidId = validateObjectId(communityId);
 
   if (!isValidId) {  
     return res.status(404).json({
@@ -232,7 +232,7 @@ const deleteCommunity = async (req, res) => {
   }
 
   try {
-    const community = await Community.findById(id);
+    const community = await Community.findById(communityId);
 
     if (!community) {  
       return res.status(404).json({

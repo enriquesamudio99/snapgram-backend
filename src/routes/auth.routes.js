@@ -18,9 +18,9 @@ router.post('/login', loginUser);
 router.post('/register', registerUser); 
 router.get('/refresh', refreshUserToken); 
 router.get('/logout', logoutUser); 
-router.post('/update/:id', verifyTokenAndUser, updateUser); 
-router.post('/update-password/:id', verifyTokenAndUser, updateUserPassword); 
-router.delete('/delete/:id', verifyTokenAndUser, deleteUser); 
+router.post('/update/:userId', verifyTokenAndUser, updateUser); 
+router.post('/update-password/:userId', verifyTokenAndUser, updateUserPassword); 
+router.delete('/delete/:userId', verifyTokenAndUser, deleteUser); 
 router.post('/forget-password', createResetPasswordToken);
 router.patch('/forget-password/:token', resetUserPassword);
 
