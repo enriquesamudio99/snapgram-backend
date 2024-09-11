@@ -3,6 +3,7 @@ import Community from '../models/community.js';
 import { communitySchema } from "../validations/community.validation.js";
 import { validateObjectId } from '../helpers/utilities.js';
 import { deleteOneImage, uploadOneImage } from '../helpers/images.js';
+import { deletePostsAndImages } from './post.controller.js';
 
 const getCommunities = async (req, res) => {
   try {
@@ -251,7 +252,10 @@ const deleteCommunity = async (req, res) => {
     // Update Users Communities
     await User.updateMany({ $pull: { communities: community._id } });
 
-    if (community.image) {;
+    // Delete Community Posts and Images
+    await deletePostsAndImages(community.posts);
+
+    if (community.image.public_id) {;
       await deleteOneImage(community.image.public_id);
     }
 

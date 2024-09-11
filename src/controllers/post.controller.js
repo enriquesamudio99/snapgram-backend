@@ -642,6 +642,18 @@ const unsharePost = async (req, res) => {
   }
 }
 
+// Delete Posts And Images
+const deletePostsAndImages = async (posts) => {
+  for (const postId of posts) {
+    const post = await Post.findById(postId);
+    if (post) {
+      const imagesToRemove = post.images.map((image) => image.public_id);
+      await deleteImages(imagesToRemove);
+      await post.deleteOne();
+    }
+  }
+}
+
 export {
   getPosts,
   getPostsByFollowing,
@@ -654,5 +666,6 @@ export {
   savePost,
   unsavePost,
   sharePost,
-  unsharePost
+  unsharePost,
+  deletePostsAndImages
 }
