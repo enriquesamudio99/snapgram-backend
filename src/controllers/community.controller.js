@@ -6,9 +6,42 @@ import { deleteOneImage, uploadOneImage } from '../helpers/images.js';
 import { deletePostsAndImages } from './post.controller.js';
 
 const getCommunities = async (req, res) => {
+  const { searchQuery, sort } = req.query;
+
+  // Pagination
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skipAmount = (page - 1) * limit;
+
   try {
-    const communities = await Community.find()
-      .sort({ createdAt: -1 })
+    const query = {};   
+    
+    if(searchQuery) {
+      const escapedSearchQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { name: { $regex: new RegExp(escapedSearchQuery, 'i') }},
+        { username: { $regex: new RegExp(escapedSearchQuery, 'i') }}
+      ]
+    }
+
+    let sortOptions = {}; 
+
+    switch (sort) {
+      case "new_communities":
+        sortOptions = { createdAt: -1 }
+        break;
+      case "old_communities":
+        sortOptions = { createdAt: 1 }
+        break;
+      default:
+        sortOptions = { createdAt: -1 }
+        break;
+    }
+
+    const communities = await Community.find(query)
+      .sort(sortOptions)
+      .skip(skipAmount)
+      .limit(limit)
       .populate([
         {
           path: "createdBy",
@@ -17,9 +50,14 @@ const getCommunities = async (req, res) => {
         }
       ]);
 
+    const totalCommunities = await Community.countDocuments(query);
+    const isNext = totalCommunities > skipAmount + communities.length; 
+
     return res.json({
       success: true,
-      data: communities
+      data: communities,
+      totalCommunities,
+      isNext
     });
   } catch (error) {
     console.log(error);

@@ -148,6 +148,7 @@ const getPostsByFollowing = async (req, res) => {
 
 const getPostsByCommunity = async (req, res) => {
   const { communityId } = req.params;
+  const userId = req.user._id;
 
   const isValidId = validateObjectId(communityId);
   
@@ -166,6 +167,24 @@ const getPostsByCommunity = async (req, res) => {
   const skipAmount = (page - 1) * limit;
 
   try {
+    const community = await Community.findById(communityId);
+
+    if (!community) {
+      return res.status(404).json({
+        success: false,
+        error: 'Community not found.'
+      });
+    }
+
+    if (community.communityType === "Private") {
+      if (!community.members.includes(userId)) {
+        return res.status(404).json({
+          success: false,
+          error: 'You do not belong to this community.'
+        });
+      }
+    }
+
     const query = {};   
     query.community = communityId;
     
