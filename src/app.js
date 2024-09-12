@@ -22,10 +22,10 @@ app.use(cookieParser());
 app.use(cors());
 
 // Routes
-app.use(`${BASE_API_URL}/auth`, authRoutes);
-app.use(`${BASE_API_URL}/users`, usersRoutes);
-app.use(`${BASE_API_URL}/posts`, postsRoutes);
-app.use(`${BASE_API_URL}/communities`, communitiesRoutes);
-app.use(`${BASE_API_URL}/comments`, commentsRoutes);
+app.use(`/${BASE_API_URL}/auth`, authRoutes);
+app.use(`/${BASE_API_URL}/users`, usersRoutes);
+app.use(`/${BASE_API_URL}/posts`, postsRoutes);
+app.use(`/${BASE_API_URL}/communities`, communitiesRoutes);
+app.use(`/${BASE_API_URL}/comments`, commentsRoutes);
 
 export default app;
