@@ -12,17 +12,13 @@ const loginSchema = Joi.object({
 });
 
 const registerSchema = Joi.object({
-  firstName: Joi.string()
-    .trim()
-    .min(3)
-    .required(), 
-  lastName: Joi.string()
+  name: Joi.string()
     .trim()
     .min(3)
     .required(),
   username: Joi.string()
     .trim()
-    .min(3)
+    .min(4)
     .required(),
   bio: Joi.string()
     .trim()
@@ -43,17 +39,13 @@ const registerSchema = Joi.object({
 });
 
 const updateSchema = Joi.object({
-  firstName: Joi.string()
-    .trim()
-    .min(3)
-    .required(), 
-  lastName: Joi.string()
+  name: Joi.string()
     .trim()
     .min(3)
     .required(), 
   username: Joi.string()
     .trim()
-    .min(3)
+    .min(4)
     .required(),
   bio: Joi.string()
     .trim()

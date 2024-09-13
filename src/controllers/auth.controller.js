@@ -40,7 +40,7 @@ const loginUser = async (req, res) => {
     // JWT
     const accessToken = generateToken({
       _id: userExists._id,
-      name: `${userExists.firstName} ${userExists.lastName}`,
+      name: userExists.name,
       username: userExists.username,
       email: userExists.email,
       bio: userExists.bio,
@@ -51,7 +51,7 @@ const loginUser = async (req, res) => {
       token: accessToken, 
       user: {
         id: userExists._id,
-        name: `${userExists.firstName} ${userExists.lastName}`,
+        name: userExists.name,
         username: userExists.username,
         email: userExists.email,
         bio: userExists.bio
@@ -109,7 +109,7 @@ const registerUser = async (req, res) => {
     // JWT
     const accessToken = generateToken({
       _id: result._id,
-      name: `${result.firstName} ${result.lastName}`,
+      name: result.name,
       username: result.username,
       email: result.email,
       bio: result.bio
@@ -120,7 +120,7 @@ const registerUser = async (req, res) => {
       token: accessToken,
       user: {
         id: result._id,
-        name: `${result.firstName} ${result.lastName}`,
+        name: result.name,
         username: result.username,
         email: result.email,
         bio: result.bio
