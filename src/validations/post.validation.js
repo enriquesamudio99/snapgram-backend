@@ -12,7 +12,7 @@ const postSchema = Joi.object({
     .trim()
     .min(1)
     .required(),
-  tags: Joi.array(),
+  tags: Joi.string(),
   imagesToRemove: Joi.array()
 });
 

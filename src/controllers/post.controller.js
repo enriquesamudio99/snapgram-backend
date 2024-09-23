@@ -276,11 +276,10 @@ const getPost = async (req, res) => {
 }
 
 const createPost = async (req, res) => {
-
   const { communityId } = req.params;
   const userId = req.user._id;
 
-  if(req.files.length === 0) {
+  if(req.files && req.files.length === 0) {
     return res.status(404).json({
       success: false,
       error: 'You must upload at least one image.'
@@ -305,6 +304,7 @@ const createPost = async (req, res) => {
     const post = new Post(value);
     post.author = userId;
     post.images = images;
+    post.tags = value.tags ? value.tags.split(",").map(tag => tag.trim()) : [];
     post.community = communityId ? communityId : null;
 
     const result = await post.save();
