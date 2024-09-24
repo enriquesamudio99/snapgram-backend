@@ -46,13 +46,13 @@ const getPosts = async (req, res) => {
       .limit(limit)
       .populate({
         path: 'author',
-        select: 'firstName lastName username'
+        select: 'name username'
       })
       .populate({
         path: 'originalPost',
         populate: {
           path: 'author',
-          select: 'firstName lastName username'
+          select: 'name username'
         }
       });
     
@@ -121,13 +121,13 @@ const getPostsByFollowing = async (req, res) => {
       .limit(limit)
       .populate({
         path: 'author',
-        select: 'firstName lastName username'
+        select: 'name username'
       })
       .populate({
         path: 'originalPost',
         populate: {
           path: 'author',
-          select: 'firstName lastName username'
+          select: 'name username'
         }
       });
     
@@ -215,13 +215,13 @@ const getPostsByCommunity = async (req, res) => {
       .limit(limit)
       .populate({
         path: 'author',
-        select: 'firstName lastName username'
+        select: 'name username'
       })
       .populate({
         path: 'originalPost',
         populate: {
           path: 'author',
-          select: 'firstName lastName username'
+          select: 'name username'
         }
       });
     
@@ -256,7 +256,7 @@ const getPost = async (req, res) => {
     const post = await Post.findById(postId)
       .populate({
         path: 'author',
-        select: 'firstName lastName username'
+        select: 'name username'
       });
 
     if (!post) {  
