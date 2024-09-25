@@ -61,7 +61,7 @@ const getPosts = async (req, res) => {
 
     return res.json({
       success: true,
-      data: posts,
+      posts,
       totalPosts,
       isNext
     });
@@ -136,7 +136,7 @@ const getPostsByFollowing = async (req, res) => {
 
     return res.json({
       success: true,
-      data: posts,
+      posts,
       totalPosts,
       isNext
     });
@@ -230,7 +230,7 @@ const getPostsByCommunity = async (req, res) => {
 
     return res.json({
       success: true,
-      data: posts,
+      posts,
       totalPosts,
       isNext
     });
@@ -333,7 +333,7 @@ const createPost = async (req, res) => {
 
     return res.json({
       success: true,
-      data: result
+      post: result
     });
   } catch (error) {
     console.log(error);
@@ -414,7 +414,7 @@ const updatePost = async (req, res) => {
 
     return res.json({
       success: true,
-      data: updatedPost
+      post: updatedPost
     });
   } catch (error) {
     console.log(error);
@@ -735,7 +735,7 @@ const sharePost = async (req, res) => {
     post.author = userId;
     post.originalPost = originalPost._id;
 
-    const result = await post.save();
+    await post.save();
 
     // Update Original Post
     await Post.findByIdAndUpdate(
@@ -750,8 +750,7 @@ const sharePost = async (req, res) => {
     );
 
     return res.status(201).json({
-      success: true,
-      data: result
+      success: true
     });
   } catch (error) {
     console.log(error);
@@ -772,12 +771,15 @@ const unsharePost = async (req, res) => {
   }
 
   try {
-    const post = await Post.findById(postId);
+    const post = await Post.findOne({
+      originalPost: postId,
+      author: userId
+    });
 
-    if (!post || !post.originalPost) {
+    if (!post) {
       return res.status(404).json({
         success: false,
-        error: 'Post not found or is not shared post'
+        error: 'Post not found'
       });
     }
 
