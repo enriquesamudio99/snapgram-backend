@@ -4,6 +4,7 @@ import {
   getPosts,
   getPostsByFollowing,
   getPostsByCommunity,
+  getPostsByUser,
   updatePost,
   deletePost,
   likePost,
@@ -12,7 +13,7 @@ import {
   unsavePost,
   getPost,
   sharePost,
-  unsharePost
+  unsharePost,
 } from '../controllers/post.controller.js';
 import upload from '../config/multer.js';
 import { verifyToken } from '../middlewares/auth.js';
@@ -22,6 +23,7 @@ const router = Router();
 router.get('/', getPosts);
 router.get('/following', verifyToken, getPostsByFollowing);
 router.get('/community/:communityId', verifyToken, getPostsByCommunity);
+router.get('/user/:userId', verifyToken, getPostsByUser);
 router.get('/:postId', getPost);
 router.post('/', verifyToken, upload.array('images', 10), createPost);
 router.post('/community/:communityId', verifyToken, upload.array('images', 10), createPost);

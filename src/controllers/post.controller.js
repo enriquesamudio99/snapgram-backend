@@ -239,6 +239,81 @@ const getPostsByCommunity = async (req, res) => {
   }
 }
 
+const getPostsByUser = async (req, res) => {
+  const { userId } = req.params;
+
+  const isValidId = validateObjectId(userId);
+  
+  if (!isValidId) {  
+    return res.status(404).json({
+      success: false,
+      error: 'Invalid object id.'
+    });
+  }
+
+  const { searchQuery, sort } = req.query;
+
+  // Pagination
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skipAmount = (page - 1) * limit;
+
+  try {
+    const query = {};   
+    query.community = [null, undefined];
+    query.author = userId;
+    
+    if(searchQuery) {
+      const escapedSearchQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { caption: { $regex: new RegExp(escapedSearchQuery, 'i') }}
+      ]
+    }
+
+    let sortOptions = {}; 
+
+    switch (sort) {
+      case "new_posts":
+        sortOptions = { createdAt: -1 }
+        break;
+      case "old_posts":
+        sortOptions = { createdAt: 1 }
+        break;
+      default:
+        sortOptions = { createdAt: -1 }
+        break;
+    }
+ 
+    const posts = await Post.find(query)
+      .sort(sortOptions)
+      .skip(skipAmount)
+      .limit(limit)
+      .populate({
+        path: 'author',
+        select: 'name username'
+      })
+      .populate({
+        path: 'originalPost',
+        populate: {
+          path: 'author',
+          select: 'name username'
+        }
+      });
+    
+    const totalPosts = await Post.countDocuments(query);
+    const isNext = totalPosts > skipAmount + posts.length; 
+
+    return res.json({
+      success: true,
+      posts,
+      totalPosts,
+      isNext
+    });
+  } catch (error) {
+    console.log(error);
+  }
+}
+
 const getPost = async (req, res) => {
 
   const { postId } = req.params;
@@ -268,7 +343,7 @@ const getPost = async (req, res) => {
 
     return res.json({
       success: true,
-      data: post
+      post
     });
   } catch (error) {
     console.log(error);
@@ -534,7 +609,7 @@ const likePost = async (req, res) => {
       });
     }
 
-    await Post.findByIdAndUpdate(
+    const updatedPost = await Post.findByIdAndUpdate(
       post._id,
       {
         $push: {
@@ -544,7 +619,8 @@ const likePost = async (req, res) => {
     );
 
     return res.json({
-      success: true
+      success: true,
+      post: updatedPost
     });
   } catch (error) {
     console.log(error);
@@ -581,7 +657,7 @@ const unlikePost = async (req, res) => {
       });
     }
 
-    await Post.findByIdAndUpdate(
+    const updatedPost = await Post.findByIdAndUpdate(
       post._id,
       {
         $pull: {
@@ -591,7 +667,8 @@ const unlikePost = async (req, res) => {
     );
 
     return res.json({
-      success: true
+      success: true,
+      post: updatedPost
     });
   } catch (error) {
     console.log(error);
@@ -738,7 +815,7 @@ const sharePost = async (req, res) => {
     await post.save();
 
     // Update Original Post
-    await Post.findByIdAndUpdate(
+    const updatedPost = await Post.findByIdAndUpdate(
       originalPost._id,
       {
         $push: {
@@ -750,7 +827,8 @@ const sharePost = async (req, res) => {
     );
 
     return res.status(201).json({
-      success: true
+      success: true,
+      post: updatedPost
     });
   } catch (error) {
     console.log(error);
@@ -794,7 +872,7 @@ const unsharePost = async (req, res) => {
     await post.deleteOne();
 
     // Update Original Post
-    await Post.findByIdAndUpdate(
+    const updatedPost = await Post.findByIdAndUpdate(
       post.originalPost,
       {
         $pull: {
@@ -806,7 +884,8 @@ const unsharePost = async (req, res) => {
     );
 
     return res.status(201).json({
-      success: true
+      success: true,
+      post: updatedPost
     });
   } catch (error) {
     console.log(error);
@@ -829,6 +908,7 @@ export {
   getPosts,
   getPostsByFollowing,
   getPostsByCommunity,
+  getPostsByUser,
   getPost,
   createPost,
   updatePost,
