@@ -261,6 +261,7 @@ const getPostsByUser = async (req, res) => {
   try {
     const query = {};   
     query.community = [null, undefined];
+    query.originalPost = [null, undefined];
     query.author = userId;
     
     if(searchQuery) {
@@ -379,7 +380,7 @@ const createPost = async (req, res) => {
     const post = new Post(value);
     post.author = userId;
     post.images = images;
-    post.tags = value.tags ? value.tags.split(",").map(tag => tag.trim()) : [];
+    post.tags = value.tags ? value.tags.split(",").map(tag => tag.trim().replace(" ", "")) : [];
     post.community = communityId ? communityId : null;
 
     const result = await post.save();
@@ -430,7 +431,7 @@ const updatePost = async (req, res) => {
   }
 
   const { error, value } = postSchema.validate(req.body);
-
+  
   if (error) {
     return res.status(404).json({
       success: false,
@@ -468,6 +469,7 @@ const updatePost = async (req, res) => {
     }
 
     post.images = [...post.images, ...newImages];
+    post.tags = value.tags ? value.tags.split(",").map(tag => tag.trim().replace(" ", "")) : [];
 
     if (post.images.length === 0) {
       return res.status(404).json({
@@ -480,7 +482,8 @@ const updatePost = async (req, res) => {
       postId,
       {
         ...value,
-        images: post.images
+        images: post.images,
+        tags: post.tags
       },
       {
         new: true
