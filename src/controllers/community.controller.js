@@ -51,13 +51,14 @@ const getCommunities = async (req, res) => {
       ]);
 
     const totalCommunities = await Community.countDocuments(query);
-    const isNext = totalCommunities > skipAmount + communities.length; 
+    const hasNextPage = totalCommunities > skipAmount + communities.length; 
 
     return res.json({
       success: true,
       data: communities,
       totalCommunities,
-      isNext
+      nextPage: hasNextPage ? page + 1 : null,
+      hasNextPage
     });
   } catch (error) {
     console.log(error);

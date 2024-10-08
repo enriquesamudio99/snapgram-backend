@@ -58,13 +58,14 @@ const getPosts = async (req, res) => {
       });
     
     const totalPosts = await Post.countDocuments(query);
-    const isNext = totalPosts > skipAmount + posts.length; 
+    const hasNextPage = totalPosts > skipAmount + posts.length; 
 
     return res.json({
       success: true,
       posts,
       totalPosts,
-      isNext
+      nextPage: hasNextPage ? page + 1 : null,
+      hasNextPage
     });
   } catch (error) {
     console.log(error);
@@ -133,13 +134,14 @@ const getPostsByFollowing = async (req, res) => {
       });
     
     const totalPosts = await Post.countDocuments(query);
-    const isNext = totalPosts > skipAmount + posts.length; 
+    const hasNextPage = totalPosts > skipAmount + posts.length; 
 
     return res.json({
       success: true,
       posts,
       totalPosts,
-      isNext
+      nextPage: hasNextPage ? page + 1 : null,
+      hasNextPage
     });
   } catch (error) {
     console.log(error);
@@ -200,13 +202,14 @@ const getSavedPosts = async (req, res) => {
       });
     
     const totalPosts = await Post.countDocuments(query);
-    const isNext = totalPosts > skipAmount + posts.length; 
+    const hasNextPage = totalPosts > skipAmount + posts.length; 
 
     return res.json({
       success: true,
       posts,
       totalPosts,
-      isNext
+      nextPage: hasNextPage ? page + 1 : null,
+      hasNextPage
     });
   } catch (error) {
     console.log(error);
@@ -293,13 +296,14 @@ const getPostsByCommunity = async (req, res) => {
       });
     
     const totalPosts = await Post.countDocuments(query);
-    const isNext = totalPosts > skipAmount + posts.length; 
+    const hasNextPage = totalPosts > skipAmount + posts.length; 
 
     return res.json({
       success: true,
       posts,
       totalPosts,
-      isNext
+      nextPage: hasNextPage ? page + 1 : null,
+      hasNextPage
     });
   } catch (error) {
     console.log(error);
@@ -369,13 +373,14 @@ const getPostsByUser = async (req, res) => {
       });
     
     const totalPosts = await Post.countDocuments(query);
-    const isNext = totalPosts > skipAmount + posts.length; 
+    const hasNextPage = totalPosts > skipAmount + posts.length; 
 
     return res.json({
       success: true,
       posts,
       totalPosts,
-      isNext
+      nextPage: hasNextPage ? page + 1 : null,
+      hasNextPage
     });
   } catch (error) {
     console.log(error);

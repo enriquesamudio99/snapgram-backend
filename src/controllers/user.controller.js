@@ -47,13 +47,14 @@ const getUsers = async (req, res) => {
       .limit(limit);
 
     const totalUsers = await User.countDocuments(query);
-    const isNext = totalUsers > skipAmount + users.length; 
+    const hasNextPage = totalUsers > skipAmount + users.length; 
     
     return res.json({
       success: true,
       data: users,
       totalUsers,
-      isNext
+      nextPage: hasNextPage ? page + 1 : null,
+      hasNextPage
     })
   } catch (error) {
     console.log(error);
