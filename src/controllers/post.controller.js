@@ -17,6 +17,7 @@ const getPosts = async (req, res) => {
 
   try {
     const query = {};   
+    query.originalPost = [null, undefined];
     query.community = [null, undefined];
     
     if(searchQuery) {
@@ -144,7 +145,73 @@ const getPostsByFollowing = async (req, res) => {
     console.log(error);
   }
 }
+const getSavedPosts = async (req, res) => {
 
+  const userId = req.user._id;
+  const { sort } = req.query;
+
+  // Pagination
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skipAmount = (page - 1) * limit;
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {  
+      return res.status(404).json({
+        success: false,
+        error: 'User not found.'
+      });
+    }
+
+    const query = {};   
+    query._id = { $in: user.savedPosts };
+    query.community = [null, undefined];
+
+    let sortOptions = {}; 
+
+    switch (sort) {
+      case "new_posts":
+        sortOptions = { createdAt: -1 }
+        break;
+      case "old_posts":
+        sortOptions = { createdAt: 1 }
+        break;
+      default:
+        sortOptions = { createdAt: -1 }
+        break;
+    }
+ 
+    const posts = await Post.find(query)
+      .sort(sortOptions)
+      .skip(skipAmount)
+      .limit(limit)
+      .populate({
+        path: 'author',
+        select: 'name username'
+      })
+      .populate({
+        path: 'originalPost',
+        populate: {
+          path: 'author',
+          select: 'name username'
+        }
+      });
+    
+    const totalPosts = await Post.countDocuments(query);
+    const isNext = totalPosts > skipAmount + posts.length; 
+
+    return res.json({
+      success: true,
+      posts,
+      totalPosts,
+      isNext
+    });
+  } catch (error) {
+    console.log(error);
+  }
+}
 
 const getPostsByCommunity = async (req, res) => {
   const { communityId } = req.params;
@@ -910,6 +977,7 @@ const deletePostsAndImages = async (posts) => {
 export {
   getPosts,
   getPostsByFollowing,
+  getSavedPosts,
   getPostsByCommunity,
   getPostsByUser,
   getPost,

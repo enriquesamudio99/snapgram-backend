@@ -3,6 +3,7 @@ import {
   createPost,
   getPosts,
   getPostsByFollowing,
+  getSavedPosts,
   getPostsByCommunity,
   getPostsByUser,
   updatePost,
@@ -22,6 +23,7 @@ const router = Router();
 
 router.get('/', getPosts);
 router.get('/following', verifyToken, getPostsByFollowing);
+router.get('/saved', verifyToken, getSavedPosts);
 router.get('/community/:communityId', verifyToken, getPostsByCommunity);
 router.get('/user/:userId', verifyToken, getPostsByUser);
 router.get('/:postId', getPost);
