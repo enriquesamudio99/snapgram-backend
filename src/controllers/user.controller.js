@@ -91,7 +91,35 @@ const getUser = async (req, res) => {
 
     return res.json({
       success: true,
-      data: user
+      user
+    })
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+const getCurrentUser = async (req, res) => {
+
+  const userId = req.user._id;
+
+  try {
+    const user = await User.findById(userId).select({
+      password: 0,
+      refreshToken: 0,
+      resetPasswordExpires: 0,
+      resetPasswordToken: 0
+    });
+
+    if (!user) {  
+      return res.status(404).json({
+        success: false,
+        error: 'User not found.'
+      });
+    }
+
+    return res.json({
+      success: true,
+      user
     })
   } catch (error) {
     console.log(error);
@@ -156,7 +184,9 @@ const followUser = async (req, res) => {
     );
     
     return res.json({
-      success: true
+      success: true,
+      userId: user._id,
+      followingId: userToFollow._id
     });
   } catch (error) {
     console.log(error);
@@ -221,7 +251,9 @@ const unfollowUser = async (req, res) => {
     );
 
     return res.json({
-      success: true
+      success: true,
+      userId: user._id,
+      unfollowingId: userToUnfollow._id
     });
   } catch (error) {
     console.log(error);
@@ -231,6 +263,7 @@ const unfollowUser = async (req, res) => {
 export {
   getUsers,
   getUser,
+  getCurrentUser,
   followUser,
   unfollowUser
 }

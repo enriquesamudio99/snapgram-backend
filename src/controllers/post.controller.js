@@ -323,6 +323,7 @@ const getPostsByUser = async (req, res) => {
   }
 
   const { searchQuery, sort } = req.query;
+  const onlyOriginals = req.query.onlyOriginals === "true";
 
   // Pagination
   const page = Number(req.query.page) || 1;
@@ -332,7 +333,11 @@ const getPostsByUser = async (req, res) => {
   try {
     const query = {};   
     query.community = [null, undefined];
-    query.originalPost = [null, undefined];
+
+    if (onlyOriginals) {
+      query.originalPost = [null, undefined];
+    }
+
     query.author = userId;
     
     if(searchQuery) {
@@ -622,11 +627,16 @@ const deletePost = async (req, res) => {
       } 
     );
 
+    // Collect all shared posts ids with this post
+    const sharesWithThisPost = await Post.find({ originalPost: post._id });
+    const sharesWithThisPostIds = sharesWithThisPost.map(share => share._id.toString());
+
     // Delete Shared Posts
     await Post.deleteMany({ originalPost: post._id });
-
-    // Update Users Saved Posts
+    
+    // Update Users Saved Posts and Shared Posts
     await User.updateMany({ $pull: { savedPosts: post._id } });
+    await User.updateMany({ $pull: { posts: { $in: sharesWithThisPostIds } } });
 
     // Update Community Posts
     if (post.community) {
@@ -887,7 +897,17 @@ const sharePost = async (req, res) => {
     post.author = userId;
     post.originalPost = originalPost._id;
 
-    await post.save();
+    const result = await post.save();
+
+    // Update user
+    await User.findByIdAndUpdate(
+      userId, 
+      {
+        $push: { 
+          posts: result._id 
+        },
+      } 
+    );
 
     // Update Original Post
     const updatedPost = await Post.findByIdAndUpdate(
@@ -945,6 +965,16 @@ const unsharePost = async (req, res) => {
 
     // Delete Post
     await post.deleteOne();
+
+    // Update user
+    await User.findByIdAndUpdate(
+      userId, 
+      {
+        $pull: { 
+          posts: post._id 
+        },
+      } 
+    );
 
     // Update Original Post
     const updatedPost = await Post.findByIdAndUpdate(
