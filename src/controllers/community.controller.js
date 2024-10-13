@@ -55,7 +55,7 @@ const getCommunities = async (req, res) => {
 
     return res.json({
       success: true,
-      data: communities,
+      communities,
       totalCommunities,
       nextPage: hasNextPage ? page + 1 : null,
       hasNextPage
@@ -89,7 +89,7 @@ const getCommunity = async (req, res) => {
 
     return res.json({
       success: true,
-      data: community
+      community
     });
   } catch (error) {
     console.log(error);
@@ -103,6 +103,8 @@ const createCommunity = async (req, res) => {
   const { error, value } = communitySchema.validate(req.body);
 
   if (error) {
+    console.log(error);
+    
     return res.status(404).json({
       success: false,
       error: 'Something wrong.'
@@ -157,7 +159,7 @@ const createCommunity = async (req, res) => {
 
     return res.json({
       success: true,
-      data: result
+      community: result
     })
   } catch (error) {
     console.log(error);
@@ -250,7 +252,7 @@ const updateCommunity = async (req, res) => {
 
     return res.json({
       success: true,
-      data: updatedCommunity
+      community: updatedCommunity
     })
   } catch (error) {
     console.log(error);
@@ -310,10 +312,463 @@ const deleteCommunity = async (req, res) => {
   }
 }
 
+const joinCommunity = async (req, res) => {
+
+  const { communityId } = req.params;
+  const userId = req.user._id;
+
+  const isValidId = validateObjectId(communityId);
+
+  if (!isValidId) {  
+    return res.status(404).json({
+      success: false,
+      error: 'Invalid object id.'
+    });
+  }
+
+  try {
+    const community = await Community.findById(communityId);
+
+    if (!community) {  
+      return res.status(404).json({
+        success: false,
+        error: 'Community not found.'
+      });
+    }
+
+    if (community.communityType === "Private") {  
+      return res.status(404).json({
+        success: false,
+        error: 'Something wrong.'
+      });
+    }
+
+    if (community.createdBy.toString() === userId) {  
+      return res.status(404).json({
+        success: false,
+        error: 'You cannot join your own community.'
+      });
+    }
+
+    if (community.members.includes(userId)) {
+      return res.status(404).json({
+        success: false,
+        error: 'You have already joined this community.'
+      });
+    }
+
+    // Update Community Members
+    await Community.findByIdAndUpdate(
+      communityId,
+      {
+        $push: {
+          members: userId
+        }
+      }
+    );
+
+    // Update User Communities
+    await User.findByIdAndUpdate(
+      userId,
+      {
+        $push: {
+          communities: communityId
+        }
+      }
+    );
+
+    return res.json({
+      success: true
+    })
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+const leaveCommunity = async (req, res) => {
+
+  const { communityId } = req.params;
+  const userId = req.user._id;
+
+  const isValidId = validateObjectId(communityId);
+
+  if (!isValidId) {  
+    return res.status(404).json({
+      success: false,
+      error: 'Invalid object id.'
+    });
+  }
+
+  try {
+    const community = await Community.findById(communityId);
+
+    if (!community) {  
+      return res.status(404).json({
+        success: false,
+        error: 'Community not found.'
+      });
+    }
+
+    if (community.createdBy.toString() === userId) {  
+      return res.status(404).json({
+        success: false,
+        error: 'You cannot leave your own community.'
+      });
+    }
+
+    if (!community.members.includes(userId)) {
+      return res.status(404).json({
+        success: false,
+        error: 'You do not belong to this community.'
+      });
+    }
+
+    // Update Community Members
+    await Community.findByIdAndUpdate(
+      communityId,
+      {
+        $pull: {
+          members: userId
+        }
+      }
+    );
+
+    // Update User Communities
+    await User.findByIdAndUpdate(
+      userId,
+      {
+        $pull: {
+          communities: communityId
+        }
+      }
+    );
+
+    return res.json({
+      success: true
+    })
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+const requestMembership = async (req, res) => {
+  const { communityId } = req.params;
+  const userId = req.user._id;
+
+  const isValidId = validateObjectId(communityId);
+
+  if (!isValidId) {  
+    return res.status(404).json({
+      success: false,
+      error: 'Invalid object id.'
+    });
+  }
+
+  try {
+    const community = await Community.findById(communityId);
+
+    if (!community) {  
+      return res.status(404).json({
+        success: false,
+        error: 'Community not found.'
+      });
+    }
+
+    if (community.createdBy.toString() === userId) {  
+      return res.status(404).json({
+        success: false,
+        error: 'You cannot request membership in your own community.'
+      });
+    }
+
+    if (community.communityType === "Public") {
+      return res.status(404).json({
+        success: false,
+        error: 'Something wrong.'
+      });
+    }
+
+    if (community.members.includes(userId)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Something wrong.'
+      });
+    }
+
+    if (community.membersRequests.includes(userId)) {
+      return res.status(404).json({
+        success: false,
+        error: 'You have already sent a request.'
+      });
+    }
+
+    // Update Community Request Members
+    await Community.findByIdAndUpdate(
+      communityId,
+      {
+        $push: {
+          membersRequests: userId
+        }
+      }
+    );
+
+    return res.json({
+      success: true
+    })
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+const deleteRequestMembership = async (req, res) => {
+  const { communityId } = req.params;
+  const userId = req.user._id;
+
+  const isValidId = validateObjectId(communityId);
+
+  if (!isValidId) {  
+    return res.status(404).json({
+      success: false,
+      error: 'Invalid object id.'
+    });
+  }
+
+  try {
+    const community = await Community.findById(communityId);
+
+    if (!community) {  
+      return res.status(404).json({
+        success: false,
+        error: 'Community not found.'
+      });
+    }
+
+    if (community.createdBy.toString() === userId) {  
+      return res.status(404).json({
+        success: false,
+        error: 'You cannot delete request membership in your own community.'
+      });
+    }
+
+    if (community.communityType === "Public") {
+      return res.status(404).json({
+        success: false,
+        error: 'Something wrong.'
+      });
+    }
+
+    if (community.members.includes(userId)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Something wrong.'
+      });
+    }
+
+    if (!community.membersRequests.includes(userId)) {
+      return res.status(404).json({
+        success: false,
+        error: 'You have not sent a request.'
+      });
+    }
+
+    // Update Community Request Members
+    await Community.findByIdAndUpdate(
+      communityId,
+      {
+        $pull: {
+          membersRequests: userId
+        }
+      }
+    );
+
+    return res.json({
+      success: true
+    })
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+const acceptMembership = async (req, res) => {
+  const { communityId, requestingUserId } = req.params;
+  const userId = req.user._id;
+
+  try {
+    
+    const community = await Community.findById(communityId);
+
+    if (!community) {  
+      return res.status(404).json({
+        success: false, 
+        error: 'Community not found.'
+      });
+    }
+
+    const requestingUser = await User.findById(requestingUserId);
+
+    if (!requestingUser) {  
+      return res.status(404).json({
+        success: false,
+        error: 'User not found.'
+      });
+    }
+
+    if (community.createdBy.toString() !== userId) {  
+      return res.status(404).json({
+        success: false, 
+        error: 'Unauthorized.'
+      });
+    }
+
+    if (!community.membersRequests.includes(requestingUserId)) {  
+      return res.status(404).json({
+        success: false, 
+        error: 'Something wrong.'
+      });
+    }
+
+    // Update Community Members and Members Requests
+    await Community.findByIdAndUpdate(
+      communityId,
+      {
+        $push: {
+          members: requestingUserId
+        },
+        $pull: {
+          membersRequests: requestingUserId
+        }
+      }
+    )
+
+    return res.json({
+      success: true
+    });   
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+const denyMembership = async (req, res) => {
+  const { communityId, requestingUserId } = req.params;
+  const userId = req.user._id;
+
+  try {
+    const community = await Community.findById(communityId);
+
+    if (!community) {  
+      return res.status(404).json({
+        success: false, 
+        error: 'Community not found.'
+      });
+    }
+
+    const requestingUser = await User.findById(requestingUserId);
+
+    if (!requestingUser) {  
+      return res.status(404).json({
+        success: false,
+        error: 'User not found.'
+      });
+    }
+
+    if (community.createdBy.toString() !== userId) {  
+      return res.status(404).json({
+        success: false, 
+        error: 'Unauthorized.'
+      });
+    }
+
+    if (!community.membersRequests.includes(requestingUserId)) {  
+      return res.status(404).json({
+        success: false, 
+        error: 'Something wrong.'
+      });
+    }
+
+    // Update Community Members and Members Requests
+    await Community.findByIdAndUpdate(
+      communityId,
+      {
+        $pull: {
+          membersRequests: requestingUserId
+        }
+      }
+    );
+
+    return res.json({
+      success: true
+    }); 
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+const deleteMember = async (req, res) => {
+  const { communityId, memberId } = req.params;
+  const userId = req.user._id;
+
+  try {
+    const community = await Community.findById(communityId);
+
+    if (!community) {  
+      return res.status(404).json({
+        success: false, 
+        error: 'Community not found.'
+      });
+    }
+
+    const member = await User.findById(memberId);
+
+    if (!member) {  
+      return res.status(404).json({
+        success: false,
+        error: 'Member not found.'
+      });
+    }
+
+    if (community.createdBy.toString() !== userId) {  
+      return res.status(404).json({
+        success: false, 
+        error: 'Unauthorized.'
+      });
+    }
+
+    if (!community.members.includes(memberId)) {  
+      return res.status(404).json({
+        success: false, 
+        error: 'Something wrong.'
+      });
+    }
+
+    // Update Community Members
+    await Community.findByIdAndUpdate(
+      communityId,
+      {
+        $pull: {
+          members: memberId
+        }
+      }
+    );
+
+    return res.json({
+      success: true
+    })
+  } catch (error) {
+    console.log(error);
+  }
+}
+
 export {
   getCommunities,
   getCommunity,
   createCommunity,
   updateCommunity,
-  deleteCommunity
+  deleteCommunity,
+  joinCommunity,
+  leaveCommunity,
+  requestMembership,
+  deleteRequestMembership,
+  acceptMembership,
+  denyMembership,
+  deleteMember
 }

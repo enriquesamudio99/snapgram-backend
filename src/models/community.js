@@ -14,8 +14,7 @@ const communitySchema = mongoose.Schema({
     secure_url: String
   },
   bio: {
-    type: String,
-    default: "My community bio"
+    type: String
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -29,6 +28,12 @@ const communitySchema = mongoose.Schema({
     }
   ],
   members: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
+  ],
+  membersRequests: [
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'

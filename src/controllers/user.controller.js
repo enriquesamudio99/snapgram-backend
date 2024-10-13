@@ -3,6 +3,7 @@ import { validateObjectId } from "../helpers/utilities.js";
 
 const getUsers = async (req, res) => {
   const { searchQuery, sort } = req.query;
+  const userId = req.user._id;
 
   // Pagination
   const page = Number(req.query.page) || 1;
@@ -11,6 +12,7 @@ const getUsers = async (req, res) => {
 
   try {
     const query = {};   
+    query._id = { $ne: userId };
     
     if(searchQuery) {
       const escapedSearchQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -51,7 +53,7 @@ const getUsers = async (req, res) => {
     
     return res.json({
       success: true,
-      data: users,
+      users,
       totalUsers,
       nextPage: hasNextPage ? page + 1 : null,
       hasNextPage
