@@ -65,6 +65,170 @@ const getCommunities = async (req, res) => {
   }
 }
 
+const getMembersByCommunity = async (req, res) => {
+  const { communityId } = req.params;
+  const userId = req.user._id;
+
+  const isValidId = validateObjectId(communityId);
+  
+  if (!isValidId) {  
+    return res.status(404).json({
+      success: false,
+      error: 'Invalid object id.'
+    });
+  }
+
+  const { sort } = req.query;
+
+  // Pagination
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skipAmount = (page - 1) * limit;
+
+  try {
+    const community = await Community.findById(communityId);
+
+    if (!community) {
+      return res.status(404).json({
+        success: false,
+        error: 'Community not found.'
+      });
+    }
+
+    if (community.communityType === "Private") {
+      if (!community.members.includes(userId)) {
+        return res.status(404).json({
+          success: false,
+          error: 'You do not belong to this community.'
+        });
+      }
+    }
+
+    const query = {};   
+    query._id = { $in: community.members };
+
+    let sortOptions = {}; 
+
+    switch (sort) {
+      case "new_users":
+        sortOptions = { createdAt: -1 }
+        break;
+      case "old_users":
+        sortOptions = { createdAt: 1 }
+        break;
+      default:
+        sortOptions = { createdAt: -1 }
+        break;
+    }
+
+    const users = await User.find(query)
+      .select({
+        password: 0,
+        refreshToken: 0,
+        resetPasswordExpires: 0,
+        resetPasswordToken: 0
+      })  
+      .sort(sortOptions)
+      .skip(skipAmount)
+      .limit(limit);
+
+    const totalUsers = await User.countDocuments(query);
+    const hasNextPage = totalUsers > skipAmount + users.length; 
+    
+    return res.json({
+      success: true,
+      users,
+      totalUsers,
+      nextPage: hasNextPage ? page + 1 : null,
+      hasNextPage
+    });
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+const getRequestsByCommunity = async (req, res) => {
+  const { communityId } = req.params;
+  const userId = req.user._id;
+
+  const isValidId = validateObjectId(communityId);
+  
+  if (!isValidId) {  
+    return res.status(404).json({
+      success: false,
+      error: 'Invalid object id.'
+    });
+  }
+
+  const { sort } = req.query;
+
+  // Pagination
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skipAmount = (page - 1) * limit;
+
+  try {
+    const community = await Community.findById(communityId);
+
+    if (!community) {
+      return res.status(404).json({
+        success: false,
+        error: 'Community not found.'
+      });
+    }
+
+    if (community.communityType === "Private") {
+      if (!community.members.includes(userId)) {
+        return res.status(404).json({
+          success: false,
+          error: 'You do not belong to this community.'
+        });
+      }
+    }
+
+    const query = {};   
+    query._id = { $in: community.membersRequests };
+
+    let sortOptions = {}; 
+
+    switch (sort) {
+      case "new_users":
+        sortOptions = { createdAt: -1 }
+        break;
+      case "old_users":
+        sortOptions = { createdAt: 1 }
+        break;
+      default:
+        sortOptions = { createdAt: -1 }
+        break;
+    }
+
+    const users = await User.find(query)
+      .select({
+        password: 0,
+        refreshToken: 0,
+        resetPasswordExpires: 0,
+        resetPasswordToken: 0
+      })  
+      .sort(sortOptions)
+      .skip(skipAmount)
+      .limit(limit);
+
+    const totalUsers = await User.countDocuments(query);
+    const hasNextPage = totalUsers > skipAmount + users.length; 
+    
+    return res.json({
+      success: true,
+      users,
+      totalUsers,
+      nextPage: hasNextPage ? page + 1 : null,
+      hasNextPage
+    });
+  } catch (error) {
+    console.log(error);
+  }
+}
+
 const getCommunity = async (req, res) => {
   const { communityId } = req.params;
 
@@ -378,7 +542,8 @@ const joinCommunity = async (req, res) => {
     );
 
     return res.json({
-      success: true
+      success: true,
+      communityId
     })
   } catch (error) {
     console.log(error);
@@ -444,7 +609,8 @@ const leaveCommunity = async (req, res) => {
     );
 
     return res.json({
-      success: true
+      success: true,
+      communityId
     })
   } catch (error) {
     console.log(error);
@@ -513,7 +679,8 @@ const requestMembership = async (req, res) => {
     );
 
     return res.json({
-      success: true
+      success: true,
+      communityId
     })
   } catch (error) {
     console.log(error);
@@ -582,7 +749,8 @@ const deleteRequestMembership = async (req, res) => {
     );
 
     return res.json({
-      success: true
+      success: true,
+      communityId
     })
   } catch (error) {
     console.log(error);
@@ -638,10 +806,21 @@ const acceptMembership = async (req, res) => {
           membersRequests: requestingUserId
         }
       }
-    )
+    );
+
+    // Update User Communities
+    await User.findByIdAndUpdate(
+      requestingUserId,
+      {
+        $push: {
+          communities: communityId
+        }
+      }
+    );
 
     return res.json({
-      success: true
+      success: true,
+      communityId
     });   
   } catch (error) {
     console.log(error);
@@ -696,7 +875,8 @@ const denyMembership = async (req, res) => {
     );
 
     return res.json({
-      success: true
+      success: true,
+      communityId
     }); 
   } catch (error) {
     console.log(error);
@@ -750,8 +930,19 @@ const deleteMember = async (req, res) => {
       }
     );
 
+    // Update User Communities
+    await User.findByIdAndUpdate(
+      memberId,
+      {
+        $pull: {
+          communities: communityId
+        }
+      }
+    );
+
     return res.json({
-      success: true
+      success: true,
+      communityId
     })
   } catch (error) {
     console.log(error);
@@ -760,6 +951,8 @@ const deleteMember = async (req, res) => {
 
 export {
   getCommunities,
+  getMembersByCommunity,
+  getRequestsByCommunity,
   getCommunity,
   createCommunity,
   updateCommunity,

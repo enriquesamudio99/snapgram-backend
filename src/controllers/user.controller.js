@@ -57,7 +57,7 @@ const getUsers = async (req, res) => {
       totalUsers,
       nextPage: hasNextPage ? page + 1 : null,
       hasNextPage
-    })
+    });
   } catch (error) {
     console.log(error);
   }

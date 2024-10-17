@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { 
   getCommunities,
+  getMembersByCommunity,
+  getRequestsByCommunity,
   getCommunity,
   createCommunity,
   updateCommunity,
@@ -18,8 +20,10 @@ import { verifyToken } from '../middlewares/auth.js';
 
 const router = Router();
 
-router.get('/', getCommunities);
-router.get('/:communityId', getCommunity);
+router.get('/', verifyToken, getCommunities);
+router.get('/members/:communityId', verifyToken, getMembersByCommunity);
+router.get('/requests/:communityId', verifyToken, getRequestsByCommunity);
+router.get('/:communityId', verifyToken, getCommunity);
 router.post('/', verifyToken, upload.array('images', 1), createCommunity);
 router.patch('/:communityId', verifyToken, upload.array('images', 1), updateCommunity);
 router.delete('/:communityId', verifyToken, deleteCommunity);

@@ -16,18 +16,18 @@ const getPosts = async (req, res) => {
   const skipAmount = (page - 1) * limit;
 
   try {
-    const query = {};   
+    const query = {};
     query.originalPost = [null, undefined];
     query.community = [null, undefined];
-    
-    if(searchQuery) {
+
+    if (searchQuery) {
       const escapedSearchQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { caption: { $regex: new RegExp(escapedSearchQuery, 'i') }}
+        { caption: { $regex: new RegExp(escapedSearchQuery, 'i') } }
       ]
     }
 
-    let sortOptions = {}; 
+    let sortOptions = {};
 
     switch (sort) {
       case "new_posts":
@@ -56,9 +56,9 @@ const getPosts = async (req, res) => {
           select: 'name username'
         }
       });
-    
+
     const totalPosts = await Post.countDocuments(query);
-    const hasNextPage = totalPosts > skipAmount + posts.length; 
+    const hasNextPage = totalPosts > skipAmount + posts.length;
 
     return res.json({
       success: true,
@@ -75,7 +75,7 @@ const getPosts = async (req, res) => {
 const getPostsByFollowing = async (req, res) => {
 
   const userId = req.user._id;
-  const { searchQuery, sort } = req.query;
+  const { sort } = req.query;
 
   // Pagination
   const page = Number(req.query.page) || 1;
@@ -85,25 +85,28 @@ const getPostsByFollowing = async (req, res) => {
   try {
     const user = await User.findById(userId);
 
-    if (!user) {  
+    if (!user) {
       return res.status(404).json({
         success: false,
         error: 'User not found.'
       });
     }
 
-    const query = {};   
-    query.community = [null, undefined];
-    query.author = { $in: user.following }
-    
-    if(searchQuery) {
-      const escapedSearchQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      query.$or = [
-        { caption: { $regex: new RegExp(escapedSearchQuery, 'i') }}
+    const query = {
+      $or: [
+        {
+          community: { $in: user.communities },
+          author: { $ne: userId }
+        },
+        {
+          author: { $in: user.following },
+          community: { $in: [null, undefined] },
+          author: { $ne: userId }
+        }
       ]
-    }
+    };
 
-    let sortOptions = {}; 
+    let sortOptions = {};
 
     switch (sort) {
       case "new_posts":
@@ -116,7 +119,7 @@ const getPostsByFollowing = async (req, res) => {
         sortOptions = { createdAt: -1 }
         break;
     }
- 
+
     const posts = await Post.find(query)
       .sort(sortOptions)
       .skip(skipAmount)
@@ -126,15 +129,22 @@ const getPostsByFollowing = async (req, res) => {
         select: 'name username'
       })
       .populate({
+        path: 'community',
+        select: '_id name image'
+      })
+      .populate({
         path: 'originalPost',
         populate: {
           path: 'author',
           select: 'name username'
         }
       });
-    
+
     const totalPosts = await Post.countDocuments(query);
-    const hasNextPage = totalPosts > skipAmount + posts.length; 
+    const hasNextPage = totalPosts > skipAmount + posts.length;
+
+    console.log(posts);
+    
 
     return res.json({
       success: true,
@@ -147,6 +157,7 @@ const getPostsByFollowing = async (req, res) => {
     console.log(error);
   }
 }
+
 const getSavedPosts = async (req, res) => {
 
   const userId = req.user._id;
@@ -160,18 +171,18 @@ const getSavedPosts = async (req, res) => {
   try {
     const user = await User.findById(userId);
 
-    if (!user) {  
+    if (!user) {
       return res.status(404).json({
         success: false,
         error: 'User not found.'
       });
     }
 
-    const query = {};   
+    const query = {};
     query._id = { $in: user.savedPosts };
     query.community = [null, undefined];
 
-    let sortOptions = {}; 
+    let sortOptions = {};
 
     switch (sort) {
       case "new_posts":
@@ -184,7 +195,7 @@ const getSavedPosts = async (req, res) => {
         sortOptions = { createdAt: -1 }
         break;
     }
- 
+
     const posts = await Post.find(query)
       .sort(sortOptions)
       .skip(skipAmount)
@@ -200,9 +211,9 @@ const getSavedPosts = async (req, res) => {
           select: 'name username'
         }
       });
-    
+
     const totalPosts = await Post.countDocuments(query);
-    const hasNextPage = totalPosts > skipAmount + posts.length; 
+    const hasNextPage = totalPosts > skipAmount + posts.length;
 
     return res.json({
       success: true,
@@ -221,8 +232,8 @@ const getPostsByCommunity = async (req, res) => {
   const userId = req.user._id;
 
   const isValidId = validateObjectId(communityId);
-  
-  if (!isValidId) {  
+
+  if (!isValidId) {
     return res.status(404).json({
       success: false,
       error: 'Invalid object id.'
@@ -255,17 +266,17 @@ const getPostsByCommunity = async (req, res) => {
       }
     }
 
-    const query = {};   
+    const query = {};
     query.community = communityId;
-    
-    if(searchQuery) {
+
+    if (searchQuery) {
       const escapedSearchQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { caption: { $regex: new RegExp(escapedSearchQuery, 'i') }}
+        { caption: { $regex: new RegExp(escapedSearchQuery, 'i') } }
       ]
     }
 
-    let sortOptions = {}; 
+    let sortOptions = {};
 
     switch (sort) {
       case "new_posts":
@@ -294,9 +305,9 @@ const getPostsByCommunity = async (req, res) => {
           select: 'name username'
         }
       });
-    
+
     const totalPosts = await Post.countDocuments(query);
-    const hasNextPage = totalPosts > skipAmount + posts.length; 
+    const hasNextPage = totalPosts > skipAmount + posts.length;
 
     return res.json({
       success: true,
@@ -314,8 +325,8 @@ const getPostsByUser = async (req, res) => {
   const { userId } = req.params;
 
   const isValidId = validateObjectId(userId);
-  
-  if (!isValidId) {  
+
+  if (!isValidId) {
     return res.status(404).json({
       success: false,
       error: 'Invalid object id.'
@@ -331,7 +342,7 @@ const getPostsByUser = async (req, res) => {
   const skipAmount = (page - 1) * limit;
 
   try {
-    const query = {};   
+    const query = {};
     query.community = [null, undefined];
 
     if (onlyOriginals) {
@@ -339,15 +350,15 @@ const getPostsByUser = async (req, res) => {
     }
 
     query.author = userId;
-    
-    if(searchQuery) {
+
+    if (searchQuery) {
       const escapedSearchQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { caption: { $regex: new RegExp(escapedSearchQuery, 'i') }}
+        { caption: { $regex: new RegExp(escapedSearchQuery, 'i') } }
       ]
     }
 
-    let sortOptions = {}; 
+    let sortOptions = {};
 
     switch (sort) {
       case "new_posts":
@@ -360,7 +371,7 @@ const getPostsByUser = async (req, res) => {
         sortOptions = { createdAt: -1 }
         break;
     }
- 
+
     const posts = await Post.find(query)
       .sort(sortOptions)
       .skip(skipAmount)
@@ -376,9 +387,9 @@ const getPostsByUser = async (req, res) => {
           select: 'name username'
         }
       });
-    
+
     const totalPosts = await Post.countDocuments(query);
-    const hasNextPage = totalPosts > skipAmount + posts.length; 
+    const hasNextPage = totalPosts > skipAmount + posts.length;
 
     return res.json({
       success: true,
@@ -398,7 +409,7 @@ const getPost = async (req, res) => {
 
   const isValidId = validateObjectId(postId);
 
-  if (!isValidId) {  
+  if (!isValidId) {
     return res.status(404).json({
       success: false,
       error: 'Invalid object id.'
@@ -410,9 +421,13 @@ const getPost = async (req, res) => {
       .populate({
         path: 'author',
         select: 'name username'
+      })
+      .populate({
+        path: 'community',
+        select: '_id name image'
       });
 
-    if (!post) {  
+    if (!post) {
       return res.status(404).json({
         success: false,
         error: 'Post not found.'
@@ -432,13 +447,13 @@ const createPost = async (req, res) => {
   const { communityId } = req.params;
   const userId = req.user._id;
 
-  if(req.files && req.files.length === 0) {
+  if (req.files && req.files.length === 0) {
     return res.status(404).json({
       success: false,
       error: 'You must upload at least one image.'
     });
   }
-  
+
   const { error, value } = postSchema.validate(req.body);
 
   if (error) {
@@ -449,6 +464,23 @@ const createPost = async (req, res) => {
   }
 
   try {
+    if (communityId) {
+      const community = await Community.findById(communityId);
+      if (!community) {
+        return res.status(404).json({
+          success: false,
+          error: 'Community not found.'
+        });
+      }
+
+      // Check if the user is a member of the community
+      if (!community.members.includes(userId)) {
+        return res.status(403).json({
+          success: false,
+          error: 'You are not a member of this community.'
+        });
+      }
+    }
 
     // Upload images
     const images = await uploadImages(req.files);
@@ -463,24 +495,26 @@ const createPost = async (req, res) => {
     const result = await post.save();
 
     // Update user
-    await User.findByIdAndUpdate(
-      userId, 
-      {
-        $push: { 
-          posts: result._id 
-        },
-      } 
-    );
+    if (!communityId) {
+      await User.findByIdAndUpdate(
+        userId,
+        {
+          $push: {
+            posts: result._id
+          },
+        }
+      );
+    }
 
     // Update Community
     if (communityId) {
       await Community.findByIdAndUpdate(
-        communityId, 
+        communityId,
         {
-          $push: { 
-            posts: result._id 
+          $push: {
+            posts: result._id
           },
-        } 
+        }
       );
     }
 
@@ -500,7 +534,7 @@ const updatePost = async (req, res) => {
 
   const isValidId = validateObjectId(postId);
 
-  if (!isValidId) {  
+  if (!isValidId) {
     return res.status(404).json({
       success: false,
       error: 'Invalid object id.'
@@ -508,18 +542,18 @@ const updatePost = async (req, res) => {
   }
 
   const { error, value } = postSchema.validate(req.body);
-  
+
   if (error) {
     return res.status(404).json({
       success: false,
       error: 'Something wrong.'
     });
-  } 
+  }
 
   try {
     const post = await Post.findById(postId);
 
-    if (!post) {  
+    if (!post) {
       return res.status(404).json({
         success: false,
         error: 'Post not found.'
@@ -529,9 +563,9 @@ const updatePost = async (req, res) => {
     if (post.author.toString() !== userId) {
       return res.status(404).json({
         success: false,
-        error: 'Unauthorized.' 
+        error: 'Unauthorized.'
       });
-    } 
+    }
 
     // Delete images if there are to delete
     if (value.imagesToRemove && value.imagesToRemove.length > 0) {
@@ -551,9 +585,9 @@ const updatePost = async (req, res) => {
     if (post.images.length === 0) {
       return res.status(404).json({
         success: false,
-        error: 'You need at least one image.' 
+        error: 'You need at least one image.'
       });
-    } 
+    }
 
     const updatedPost = await Post.findByIdAndUpdate(
       postId,
@@ -583,7 +617,7 @@ const deletePost = async (req, res) => {
 
   const isValidId = validateObjectId(postId);
 
-  if (!isValidId) {  
+  if (!isValidId) {
     return res.status(404).json({
       success: false,
       error: 'Invalid object id.'
@@ -594,17 +628,20 @@ const deletePost = async (req, res) => {
 
     const post = await Post.findById(postId)
       .populate({
+        path: "author"
+      })
+      .populate({
         path: "comments"
       });
 
-    if (!post) {  
+    if (!post) {
       return res.status(404).json({
         success: false,
         error: 'Post not found.'
       });
     }
 
-    if (post.author.toString() !== userId) {  
+    if (post.author._id.toString() !== userId) {
       return res.status(404).json({
         success: false,
         error: 'Unauthorized.'
@@ -619,12 +656,12 @@ const deletePost = async (req, res) => {
 
     // Update user
     await User.findByIdAndUpdate(
-      userId, 
+      userId,
       {
-        $pull: { 
-          posts: post._id 
+        $pull: {
+          posts: post._id
         },
-      } 
+      }
     );
 
     // Collect all shared posts ids with this post
@@ -633,7 +670,7 @@ const deletePost = async (req, res) => {
 
     // Delete Shared Posts
     await Post.deleteMany({ originalPost: post._id });
-    
+
     // Update Users Saved Posts and Shared Posts
     await User.updateMany({ $pull: { savedPosts: post._id } });
     await User.updateMany({ $pull: { posts: { $in: sharesWithThisPostIds } } });
@@ -641,12 +678,12 @@ const deletePost = async (req, res) => {
     // Update Community Posts
     if (post.community) {
       await Community.findByIdAndUpdate(
-        post.community, 
+        post.community,
         {
-          $pull: { 
-            posts: post._id 
+          $pull: {
+            posts: post._id
           },
-        } 
+        }
       );
     }
 
@@ -656,9 +693,8 @@ const deletePost = async (req, res) => {
 
     return res.json({
       success: true,
-      message: 'Post deleted successfully.'
+      post
     });
-    
   } catch (error) {
     console.log(error);
   }
@@ -670,17 +706,17 @@ const likePost = async (req, res) => {
 
   const isValidId = validateObjectId(postId);
 
-  if (!isValidId) {  
+  if (!isValidId) {
     return res.status(404).json({
       success: false,
       error: 'Invalid object id.'
     });
   }
 
-  try { 
+  try {
     const post = await Post.findById(postId);
 
-    if (!post) {  
+    if (!post) {
       return res.status(404).json({
         success: false,
         error: 'Post not found.'
@@ -718,17 +754,17 @@ const unlikePost = async (req, res) => {
 
   const isValidId = validateObjectId(postId);
 
-  if (!isValidId) {  
+  if (!isValidId) {
     return res.status(404).json({
       success: false,
       error: 'Invalid object id.'
     });
   }
 
-  try { 
+  try {
     const post = await Post.findById(postId);
 
-    if (!post) {  
+    if (!post) {
       return res.status(404).json({
         success: false,
         error: 'Post not found.'
@@ -766,17 +802,17 @@ const savePost = async (req, res) => {
 
   const isValidId = validateObjectId(postId);
 
-  if (!isValidId) {  
+  if (!isValidId) {
     return res.status(404).json({
       success: false,
       error: 'Invalid object id.'
     });
   }
 
-  try { 
+  try {
     const user = await User.findById(userId);
 
-    if (!user) {  
+    if (!user) {
       return res.status(404).json({
         success: false,
         error: 'User not found.'
@@ -813,17 +849,17 @@ const unsavePost = async (req, res) => {
 
   const isValidId = validateObjectId(postId);
 
-  if (!isValidId) {  
+  if (!isValidId) {
     return res.status(404).json({
       success: false,
       error: 'Invalid object id.'
     });
   }
 
-  try { 
+  try {
     const user = await User.findById(userId);
 
-    if (!user) {  
+    if (!user) {
       return res.status(404).json({
         success: false,
         error: 'User not found.'
@@ -860,7 +896,7 @@ const sharePost = async (req, res) => {
 
   const isValidId = validateObjectId(postId);
 
-  if (!isValidId) {  
+  if (!isValidId) {
     return res.status(404).json({
       success: false,
       error: 'Invalid object id.'
@@ -901,12 +937,12 @@ const sharePost = async (req, res) => {
 
     // Update user
     await User.findByIdAndUpdate(
-      userId, 
+      userId,
       {
-        $push: { 
-          posts: result._id 
+        $push: {
+          posts: result._id
         },
-      } 
+      }
     );
 
     // Update Original Post
@@ -936,7 +972,7 @@ const unsharePost = async (req, res) => {
 
   const isValidId = validateObjectId(postId);
 
-  if (!isValidId) {  
+  if (!isValidId) {
     return res.status(404).json({
       success: false,
       error: 'Invalid object id.'
@@ -968,12 +1004,12 @@ const unsharePost = async (req, res) => {
 
     // Update user
     await User.findByIdAndUpdate(
-      userId, 
+      userId,
       {
-        $pull: { 
-          posts: post._id 
+        $pull: {
+          posts: post._id
         },
-      } 
+      }
     );
 
     // Update Original Post
