@@ -54,7 +54,8 @@ const updateSchema = Joi.object({
     .trim()
     .email()
     .lowercase()
-    .required()
+    .required(),
+  removeProfileImg: Joi.string()
 });
 
 const updatePasswordSchema = Joi.object({

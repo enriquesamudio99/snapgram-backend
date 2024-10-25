@@ -47,13 +47,13 @@ const getPosts = async (req, res) => {
       .limit(limit)
       .populate({
         path: 'author',
-        select: 'name username'
+        select: 'name username image'
       })
       .populate({
         path: 'originalPost',
         populate: {
           path: 'author',
-          select: 'name username'
+          select: 'name username image'
         }
       });
 
@@ -99,9 +99,9 @@ const getPostsByFollowing = async (req, res) => {
           author: { $ne: userId }
         },
         {
-          author: { $in: user.following },
-          community: { $in: [null, undefined] },
-          author: { $ne: userId }
+          author: { $in: user.following, $ne: userId },
+          community: null,
+          originalPost: { $nin: user.posts },
         }
       ]
     };
@@ -126,7 +126,7 @@ const getPostsByFollowing = async (req, res) => {
       .limit(limit)
       .populate({
         path: 'author',
-        select: 'name username'
+        select: 'name username image'
       })
       .populate({
         path: 'community',
@@ -136,16 +136,13 @@ const getPostsByFollowing = async (req, res) => {
         path: 'originalPost',
         populate: {
           path: 'author',
-          select: 'name username'
+          select: 'name username image'
         }
       });
 
     const totalPosts = await Post.countDocuments(query);
     const hasNextPage = totalPosts > skipAmount + posts.length;
-
-    console.log(posts);
     
-
     return res.json({
       success: true,
       posts,
@@ -202,13 +199,13 @@ const getSavedPosts = async (req, res) => {
       .limit(limit)
       .populate({
         path: 'author',
-        select: 'name username'
+        select: 'name username image'
       })
       .populate({
         path: 'originalPost',
         populate: {
           path: 'author',
-          select: 'name username'
+          select: 'name username image'
         }
       });
 
@@ -296,13 +293,13 @@ const getPostsByCommunity = async (req, res) => {
       .limit(limit)
       .populate({
         path: 'author',
-        select: 'name username'
+        select: 'name username image'
       })
       .populate({
         path: 'originalPost',
         populate: {
           path: 'author',
-          select: 'name username'
+          select: 'name username image'
         }
       });
 
@@ -378,13 +375,13 @@ const getPostsByUser = async (req, res) => {
       .limit(limit)
       .populate({
         path: 'author',
-        select: 'name username'
+        select: 'name username image'
       })
       .populate({
         path: 'originalPost',
         populate: {
           path: 'author',
-          select: 'name username'
+          select: 'name username image'
         }
       });
 
@@ -420,7 +417,7 @@ const getPost = async (req, res) => {
     const post = await Post.findById(postId)
       .populate({
         path: 'author',
-        select: 'name username'
+        select: 'name username image'
       })
       .populate({
         path: 'community',

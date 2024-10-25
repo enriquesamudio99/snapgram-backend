@@ -29,7 +29,7 @@ const verifyToken = async (req, res, next) => {
 
 const verifyTokenAndUser = (req, res, next) => {
   verifyToken(req, res, () => {
-    if (req.user._id === req.params.id) {
+    if (req.user._id === req.params.userId) {
       next();
     } else {
       res.status(403).json({

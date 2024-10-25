@@ -3,7 +3,8 @@ import { loginSchema, registerSchema, updatePasswordSchema, updateSchema } from 
 import { generateRandomToken, generateToken, validateObjectId } from "../helpers/utilities.js";
 import bcrypt from 'bcrypt';
 import { forgetPasswordEmail } from '../helpers/email.js';
- 
+import { deleteOneImage, uploadOneImage } from "../helpers/images.js";
+
 const loginUser = async (req, res) => {
   const { error, value } = loginSchema.validate(req.body);
 
@@ -42,17 +43,19 @@ const loginUser = async (req, res) => {
       _id: userExists._id,
       name: userExists.name,
       username: userExists.username,
+      image: userExists.image ? userExists.image.secure_url : null,
       email: userExists.email,
       bio: userExists.bio,
     });
 
     return res.status(200).json({
       success: true,
-      token: accessToken, 
+      token: accessToken,
       user: {
         id: userExists._id,
         name: userExists.name,
         username: userExists.username,
+        image: userExists.image ? userExists.image.secure_url : null,
         email: userExists.email,
         bio: userExists.bio
       }
@@ -71,7 +74,7 @@ const registerUser = async (req, res) => {
       success: false,
       error: 'Something wrong.'
     });
-  } 
+  }
 
   try {
     const userExists = await User.findOne({
@@ -88,8 +91,8 @@ const registerUser = async (req, res) => {
     const usernameInUse = await User.findOne({
       username: value.username
     });
- 
-    if (usernameInUse) { 
+
+    if (usernameInUse) {
       return res.status(404).json({
         success: false,
         error: 'This username is already in use.'
@@ -99,7 +102,7 @@ const registerUser = async (req, res) => {
     const user = new User(value);
 
     // Hash Password
-    const salt = bcrypt.genSaltSync(); 
+    const salt = bcrypt.genSaltSync();
     user.password = bcrypt.hashSync(value.password, salt);
 
     const result = await user.save();
@@ -133,33 +136,42 @@ const registerUser = async (req, res) => {
 
 const refreshUserToken = async (req, res) => {
 
-  const { _id, name, username, email, bio } = req.user;
+  const { _id } = req.user;
 
   try {
+    const user = await User.findById(_id).select("_id name username email image bio");
+
+    if (!user) {
+      return res.status(404).json({
+        error: 'Something wrong.'
+      });
+    }
+
     // JWT
     const accessToken = generateToken({
-      _id,
-      name,
-      username,
-      email,
-      bio
+      _id: user._id,
+      name: user.name,
+      username: user.username,
+      image: user.image.secure_url ? user.image.secure_url : null,
+      email: user.email,
+      bio: user.bio
     });
 
     return res.json({
       success: true,
       token: accessToken,
       user: {
-        id: _id,
-        name,
-        username,
-        email,
-        bio
+        id: user._id,
+        name: user.name,
+        username: user.username,
+        image: user.image.secure_url ? user.image.secure_url : null,
+        email: user.email,
+        bio: user.bio
       }
     });
-
   } catch (error) {
     console.log(error);
-    
+
     return res.status(401).json({
       error: 'Invalid token.'
     });
@@ -171,17 +183,21 @@ const updateUser = async (req, res) => {
   const { userId } = req.params;
 
   const isValidId = validateObjectId(userId);
-  
-  if (!isValidId) {  
+
+  if (!isValidId) {
     return res.status(404).json({
       success: false,
       error: 'Invalid object id.'
     });
   }
 
+  const removeProfileImg = req.body.removeProfileImg === "true";
+
   const { error, value } = updateSchema.validate(req.body);
 
   if (error) {
+    console.log(error);
+
     return res.status(404).json({
       success: false,
       error: 'Something wrong.'
@@ -191,7 +207,7 @@ const updateUser = async (req, res) => {
   try {
     const user = await User.findById(userId);
 
-    if (!user) {  
+    if (!user) {
       return res.status(404).json({
         success: false,
         error: 'User not found.'
@@ -202,7 +218,7 @@ const updateUser = async (req, res) => {
       const emailInUse = await User.findOne({
         email: value.email
       });
-  
+
       if (emailInUse) {
         return res.status(404).json({
           success: false,
@@ -215,7 +231,7 @@ const updateUser = async (req, res) => {
       const usernameInUse = await User.findOne({
         username: value.username
       });
-  
+
       if (usernameInUse) {
         return res.status(404).json({
           success: false,
@@ -224,11 +240,37 @@ const updateUser = async (req, res) => {
       }
     }
 
-    const updatedUser = await User.findByIdAndUpdate(userId, value, { new: true });
+    let image = null;
+    if (req.files.length === 0 && removeProfileImg) {
+      if (user.image) {
+        await deleteOneImage(user.image.public_id);
+        user.image = null;
+      }
+    }
+
+    if (req.files.length === 1) {
+      if (user.image.public_id) {
+        await deleteOneImage(user.image.public_id);
+      }
+      image = await uploadOneImage(req.files[0]);
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        ...value,
+        image: image ? image : user.image
+      },
+      {
+        new: true
+      }
+    );
+
+    updatedUser.password = undefined;
 
     return res.json({
       success: true,
-      data: updatedUser
+      user: updatedUser
     });
   } catch (error) {
     console.log(error);
@@ -239,8 +281,8 @@ const updateUserPassword = async (req, res) => {
   const { userId } = req.params;
 
   const isValidId = validateObjectId(userId);
-  
-  if (!isValidId) {  
+
+  if (!isValidId) {
     return res.status(404).json({
       success: false,
       error: 'Invalid object id.'
@@ -259,7 +301,7 @@ const updateUserPassword = async (req, res) => {
   try {
     const user = await User.findById(userId);
 
-    if (!user) {  
+    if (!user) {
       return res.status(404).json({
         success: false,
         error: 'User not found.'
@@ -276,7 +318,7 @@ const updateUserPassword = async (req, res) => {
     }
 
     // Hash Password
-    const salt = bcrypt.genSaltSync(); 
+    const salt = bcrypt.genSaltSync();
     user.password = bcrypt.hashSync(value.password, salt);
 
     await user.save();
@@ -294,19 +336,19 @@ const deleteUser = async (req, res) => {
   const { userId } = req.params;
 
   const isValidId = validateObjectId(userId);
-  
-  if (!isValidId) {  
+
+  if (!isValidId) {
     return res.status(404).json({
       success: false,
       error: 'Invalid object id.'
     });
   }
- 
+
   try {
-    
+
     const user = await User.findByIdAndDelete(userId);
 
-    if (!user) {  
+    if (!user) {
       return res.status(404).json({
         success: false,
         error: 'User not found.'
@@ -370,9 +412,9 @@ const resetUserPassword = async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ 
-      resetPasswordToken: token, 
-      resetPasswordExpires: { $gt: Date.now() } 
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
     });
 
     if (!user) {
@@ -383,7 +425,7 @@ const resetUserPassword = async (req, res) => {
     }
 
     // Hash Password
-    const salt = bcrypt.genSaltSync(); 
+    const salt = bcrypt.genSaltSync();
     user.password = bcrypt.hashSync(value.password, salt);
 
     // Delete token
