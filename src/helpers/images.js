@@ -1,24 +1,21 @@
 import { uploadImage, deleteImage } from '../config/cloudinary.js';
-import fs from 'fs-extra';
 
 const uploadImages = async (files) => {
   const urls = [];
   for (const file of files){
-    const { path } = file;
-    const result = await uploadImage(path, 'snapgram');
+    const { buffer } = file;
+    const result = await uploadImage(buffer, 'snapgram');
     urls.push({
       public_id: result.public_id,
       secure_url: result.secure_url
     });
-    await fs.unlink(path);
   } 
   return urls; 
 }
 
 const uploadOneImage = async (file) => {
-  const { path } = file;
-  const result = await uploadImage(path, 'snapgram');
-  await fs.unlink(path);
+  const { buffer } = file;
+  const result = await uploadImage(buffer, 'snapgram');
   return {
     public_id: result.public_id,
     secure_url: result.secure_url

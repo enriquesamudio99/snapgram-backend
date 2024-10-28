@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from 'cloudinary';
+import streamifier from 'streamifier';
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } from '../config/env.js';
 
 cloudinary.config({
@@ -8,10 +9,17 @@ cloudinary.config({
   secure: true
 });
 
-const uploadImage = async (path, folder) => {
-  return await cloudinary.uploader.upload(path, {
-    folder
-  })
+const uploadImage = (buffer, folder) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream({ folder }, (error, result) => {
+      if (result) {
+        resolve(result);
+      } else {
+        reject(error);
+      }
+    });
+    streamifier.createReadStream(buffer).pipe(stream);
+  });
 }
 
 const deleteImage = async (publicId) => {
