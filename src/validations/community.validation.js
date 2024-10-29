@@ -17,7 +17,8 @@ const communitySchema = Joi.object({
     .min(4),
   communityType: Joi.string()
     .valid("Private", "Public")
-    .required()
+    .required(),
+  removeProfileImg: Joi.string()
 });
 
 export {

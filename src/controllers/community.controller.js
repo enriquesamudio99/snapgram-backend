@@ -344,6 +344,8 @@ const updateCommunity = async (req, res) => {
     });
   }
 
+  const removeProfileImg = req.body.removeProfileImg === "true";
+
   const { error, value } = communitySchema.validate(req.body);
 
   if (error) {
@@ -396,12 +398,35 @@ const updateCommunity = async (req, res) => {
       }
     }
  
-    let image = undefined;
+    let image = null;
+    if (req.files.length === 0 && removeProfileImg) {
+      if (community.image) {
+        await deleteOneImage(community.image.public_id);
+        community.image = null;
+      }
+    }
+
     if (req.files.length === 1) {
-      await deleteOneImage(community.image.public_id);
+      if (community.image.public_id) {
+        await deleteOneImage(community.image.public_id);
+      }
       image = await uploadOneImage(req.files[0]);
     }
     
+    if (value.communityType === "Public" && community.communityType === "Private") {
+      await Community.findByIdAndUpdate(
+        communityId,
+        {
+          $push: {
+            members: { $each: community.membersRequests }
+          },
+          $set: {
+            membersRequests: []
+          }
+        }
+      )
+    }
+
     // Update Community
     const updatedCommunity = await Community.findByIdAndUpdate(
       communityId,
