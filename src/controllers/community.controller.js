@@ -10,7 +10,7 @@ const getCommunities = async (req, res) => {
 
   // Pagination
   const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
+  const limit = Number(req.query.limit) || 9;
   const skipAmount = (page - 1) * limit;
 
   try {
@@ -82,7 +82,7 @@ const getMembersByCommunity = async (req, res) => {
 
   // Pagination
   const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
+  const limit = Number(req.query.limit) || 9;
   const skipAmount = (page - 1) * limit;
 
   try {
@@ -164,7 +164,7 @@ const getRequestsByCommunity = async (req, res) => {
 
   // Pagination
   const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
+  const limit = Number(req.query.limit) || 9;
   const skipAmount = (page - 1) * limit;
 
   try {

@@ -12,7 +12,7 @@ const getPosts = async (req, res) => {
 
   // Pagination
   const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
+  const limit = Number(req.query.limit) || 9;
   const skipAmount = (page - 1) * limit;
 
   try {
@@ -79,7 +79,7 @@ const getPostsByFollowing = async (req, res) => {
 
   // Pagination
   const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
+  const limit = Number(req.query.limit) || 9;
   const skipAmount = (page - 1) * limit;
 
   try {
@@ -162,7 +162,7 @@ const getSavedPosts = async (req, res) => {
 
   // Pagination
   const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
+  const limit = Number(req.query.limit) || 9;
   const skipAmount = (page - 1) * limit;
 
   try {
@@ -241,7 +241,7 @@ const getPostsByCommunity = async (req, res) => {
 
   // Pagination
   const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
+  const limit = Number(req.query.limit) || 9;
   const skipAmount = (page - 1) * limit;
 
   try {
@@ -335,7 +335,7 @@ const getPostsByUser = async (req, res) => {
 
   // Pagination
   const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
+  const limit = Number(req.query.limit) || 9;
   const skipAmount = (page - 1) * limit;
 
   try {
