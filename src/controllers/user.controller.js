@@ -2,7 +2,7 @@ import User from "../models/user.js";
 import { validateObjectId } from "../helpers/utilities.js";
 
 const getUsers = async (req, res) => {
-  const { searchQuery, sort } = req.query;
+  const { searchTerm, sort } = req.query;
   const userId = req.user._id;
 
   // Pagination
@@ -14,11 +14,10 @@ const getUsers = async (req, res) => {
     const query = {};   
     query._id = { $ne: userId };
     
-    if(searchQuery) {
-      const escapedSearchQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if(searchTerm) {
+      const escapedSearchQuery = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { firstName: { $regex: new RegExp(escapedSearchQuery, 'i') }},
-        { lastName: { $regex: new RegExp(escapedSearchQuery, 'i') }},
+        { name: { $regex: new RegExp(escapedSearchQuery, 'i') }},
         { username: { $regex: new RegExp(escapedSearchQuery, 'i') }},
       ]
     }

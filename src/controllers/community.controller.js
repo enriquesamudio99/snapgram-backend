@@ -6,7 +6,7 @@ import { deleteOneImage, uploadOneImage } from '../helpers/images.js';
 import { deletePostsAndImages } from './post.controller.js';
 
 const getCommunities = async (req, res) => {
-  const { searchQuery, sort } = req.query;
+  const { searchTerm, sort } = req.query;
 
   // Pagination
   const page = Number(req.query.page) || 1;
@@ -16,11 +16,11 @@ const getCommunities = async (req, res) => {
   try {
     const query = {};   
     
-    if(searchQuery) {
-      const escapedSearchQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if(searchTerm) {
+      const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { name: { $regex: new RegExp(escapedSearchQuery, 'i') }},
-        { username: { $regex: new RegExp(escapedSearchQuery, 'i') }}
+        { name: { $regex: new RegExp(escapedSearchTerm, 'i') }},
+        { username: { $regex: new RegExp(escapedSearchTerm, 'i') }}
       ]
     }
 
