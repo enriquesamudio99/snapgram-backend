@@ -1,5 +1,6 @@
 import User from "../models/user.js";
 import { validateObjectId } from "../helpers/utilities.js";
+import mongoose from "mongoose";
 
 const getUsers = async (req, res) => {
   const { searchTerm, sort } = req.query;
@@ -58,6 +59,49 @@ const getUsers = async (req, res) => {
       hasNextPage
     });
   } catch (error) {
+    console.log(error);
+  }
+}
+
+const getUsersByCreatedPosts = async (req, res) => {
+  const userId = new mongoose.Types.ObjectId(req.user._id); 
+
+  try {
+    const query = { _id: { $ne: userId } };
+
+    const users = await User.aggregate([
+      {
+        $project: {
+          postCount: { $size: "$posts" },
+          name: 1,
+          username: 1,
+          image: 1,
+          email: 1,
+          bio: 1,
+          followers: 1,
+          following: 1,
+          communities: 1,
+          savedPosts: 1,
+          createdAt: 1,
+          updatedAt: 1
+        }
+      },
+      {
+        $match: query
+      },
+      {
+        $sort: { postCount: -1 }
+      },
+      {
+        $limit: 8
+      }
+    ]);
+    
+    return res.json({
+      success: true,
+      users
+    });
+  } catch (error) { 
     console.log(error);
   }
 }
@@ -263,6 +307,7 @@ const unfollowUser = async (req, res) => {
 
 export {
   getUsers,
+  getUsersByCreatedPosts,
   getUser,
   getCurrentUser,
   followUser,
