@@ -7,7 +7,6 @@ import { postSchema } from "../validations/post.validation.js";
 import { validateObjectId } from '../helpers/utilities.js';
 import { uploadImages, deleteImages } from '../helpers/images.js';
 import { deleteReplies } from './comment.controller.js';
-import { io } from '../app.js';
 
 const getPosts = async (req, res) => {
   const { searchQuery, sort } = req.query;
@@ -747,8 +746,7 @@ const likePost = async (req, res) => {
       content: `${userName} liked your post`,
       postId: updatedPost._id
     });
-    const result = await notification.save();
-    io.to(updatedPost.author.toString()).emit("newNotification", result);
+    await notification.save();
 
     return res.json({
       success: true,
@@ -977,8 +975,7 @@ const sharePost = async (req, res) => {
       content: `${userName} shared your post`,
       postId: updatedPost._id
     });
-    const notificationResult = await notification.save();
-    io.to(updatedPost.author.toString()).emit("newNotification", notificationResult);
+    await notification.save();
 
     return res.status(201).json({
       success: true,
