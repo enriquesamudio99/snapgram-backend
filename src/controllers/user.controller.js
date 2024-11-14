@@ -1,6 +1,8 @@
 import User from "../models/user.js";
+import Notification from "../models/notification.js";
 import { validateObjectId } from "../helpers/utilities.js";
 import mongoose from "mongoose";
+import { io } from "../app.js";
 
 const getUsers = async (req, res) => {
   const { searchTerm, sort } = req.query;
@@ -227,6 +229,16 @@ const followUser = async (req, res) => {
         }
       }
     );
+
+    // Create Notification
+    const notification = new Notification({ 
+      userId: userToFollow._id,
+      senderId: userId,
+      type: "follow",
+      content: `${user.name} followed you`
+    });
+    const result = await notification.save();
+    io.to(userToFollow._id.toString()).emit("newNotification", result);
     
     return res.json({
       success: true,

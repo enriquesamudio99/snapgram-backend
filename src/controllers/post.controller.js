@@ -2,10 +2,12 @@ import User from '../models/user.js';
 import Post from '../models/post.js';
 import Community from '../models/community.js';
 import Comment from '../models/comment.js';
+import Notification from '../models/notification.js';
 import { postSchema } from "../validations/post.validation.js";
 import { validateObjectId } from '../helpers/utilities.js';
 import { uploadImages, deleteImages } from '../helpers/images.js';
 import { deleteReplies } from './comment.controller.js';
+import { io } from '../app.js';
 
 const getPosts = async (req, res) => {
   const { searchQuery, sort } = req.query;
@@ -699,6 +701,7 @@ const deletePost = async (req, res) => {
 
 const likePost = async (req, res) => {
   const { postId } = req.params;
+  const userName = req.user.name;
   const userId = req.user._id;
 
   const isValidId = validateObjectId(postId);
@@ -735,6 +738,17 @@ const likePost = async (req, res) => {
         }
       }
     );
+
+    // Create Notification
+    const notification = new Notification({ 
+      userId: updatedPost.author,
+      senderId: userId,
+      type: "like",
+      content: `${userName} liked your post`,
+      postId: updatedPost._id
+    });
+    const result = await notification.save();
+    io.to(updatedPost.author.toString()).emit("newNotification", result);
 
     return res.json({
       success: true,
@@ -889,6 +903,7 @@ const unsavePost = async (req, res) => {
 
 const sharePost = async (req, res) => {
   const { postId } = req.params;
+  const userName = req.user.name;
   const userId = req.user._id;
 
   const isValidId = validateObjectId(postId);
@@ -953,6 +968,17 @@ const sharePost = async (req, res) => {
         }
       }
     );
+
+    // Create Notification
+    const notification = new Notification({ 
+      userId: updatedPost.author,
+      senderId: userId,
+      type: "share",
+      content: `${userName} shared your post`,
+      postId: updatedPost._id
+    });
+    const notificationResult = await notification.save();
+    io.to(updatedPost.author.toString()).emit("newNotification", notificationResult);
 
     return res.status(201).json({
       success: true,
